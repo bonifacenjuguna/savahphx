@@ -43,7 +43,7 @@ export default async function Home() {
       style={{
         "--accent": t.accent, "--bg": t.bg, "--radius": `${t.radius}px`,
         "--blur": `${t.blur}px`,
-        backgroundImage: t.backgroundImage ? `linear-gradient(180deg, rgba(5,9,15,.70), rgba(5,9,15,.88)), url("${t.backgroundImage}")` : undefined,
+        "--page-bg-image": t.backgroundImage ? `url("${t.backgroundImage}")` : "none",
       } as React.CSSProperties}
     >
       <section className="profile-shell">
