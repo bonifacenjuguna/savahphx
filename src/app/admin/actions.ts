@@ -1,12 +1,14 @@
 "use server";
+import { put } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { links, settings } from "@/db/schema";
 import { isAdmin, makeToken, safeEq } from "@/lib/auth";
-import { defaultSettings, type Row, type Settings } from "@/lib/theme";
+import { normalize, type Row, type Settings } from "@/lib/theme";
 
+// Best-effort brute-force limit (per server instance).
 const hits = new Map<string, { n: number; t: number }>();
 
 export async function login(fd: FormData) {
@@ -35,53 +37,44 @@ export async function logout() {
   redirect("/admin");
 }
 
+export async function upload(fd: FormData) {
+  if (!(await isAdmin())) throw new Error("Unauthorized");
+  const f = fd.get("file");
+  if (!(f instanceof File) || !f.type.startsWith("image/") || f.size > 4e6) throw new Error("Bad file");
+  const { url } = await put(`img/${Date.now()}-${f.name.replace(/[^\w.-]/g, "_")}`, f, { access: "public" });
+  return url;
+}
 
 export async function saveAll(p: { rows: Row[]; settings: Settings }) {
   if (!(await isAdmin())) throw new Error("Unauthorized");
   const okUrl = (u: string) => /^(https?:\/\/|mailto:|tel:)/i.test(u);
-  const okImg = (u: string) => !u || /^https:\/\//i.test(u);
-  let position = 0;
+  const okImg = (u: string) => /^https:\/\//i.test(u);
+  const cardKeys = new Set(p.rows.filter((r) => r.kind === "card").map((r) => r.key));
+  const pos = { card: 0, social: 0 };
 
   const vals = p.rows.map((r) => {
-    if (!r.title.trim() || !okUrl(r.url.trim())) throw new Error("Bad link");
-    if (!okImg(r.image)) throw new Error("Image URLs must use HTTPS");
+    const kind = r.kind === "social" ? "social" : "card";
+    const sc = kind === "social" && cardKeys.has(r.shortcutOf) ? r.shortcutOf : null;
+    const target = sc ? p.rows.find((x) => x.key === sc) : undefined;
+    const url = (target?.url ?? r.url).trim();
+    const title = (r.title.trim() || target?.title || "").slice(0, 80);
+    if (!title || !okUrl(url)) throw new Error("Bad link");
     return {
-      kind: "card", title: r.title.trim().slice(0, 80), url: r.url.trim(),
+      kind, title, url,
       icon: /^[a-z0-9]+$/.test(r.icon) ? r.icon : null,
       image: okImg(r.image) ? r.image : null,
       width: r.width === "half" ? "half" : "full",
-      position: position++, visible: !!r.visible, shortcut: !!r.shortcut,
+      position: pos[kind]++, visible: !!r.visible,
+      uid: String(r.key).replace(/[^\w-]/g, "").slice(0, 64) || crypto.randomUUID(),
+      shortcutOf: sc,
     };
   });
 
-  const s = p.settings, d = defaultSettings;
-  const num = (n: number, lo: number, hi: number, def: number) =>
-    Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def;
-  const hex = (v: string, def: string) => /^#[0-9a-f]{6}$/i.test(v) ? v : def;
-  const image = (v: string) => /^https:\/\//i.test(v) ? v.slice(0, 2000) : "";
-  const data: Settings = {
-    name: String(s.name ?? "").slice(0, 80),
-    bio: String(s.bio ?? "").slice(0, 500),
-    uid: String(s.uid ?? "").slice(0, 100),
-    avatar: image(s.avatar),
-    banner: image(s.banner),
-    backgroundImage: image(s.backgroundImage),
-    avatarPosition: (["center", "left", "right"].includes(s.avatarPosition) ? s.avatarPosition : d.avatarPosition),
-    profileLayout: (["center", "left", "right"].includes(s.profileLayout) ? s.profileLayout : d.profileLayout),
-    socialsPosition: (["top", "bottom"].includes(s.socialsPosition) ? s.socialsPosition : d.socialsPosition),
-    headerStyle: (["card", "minimal"].includes(s.headerStyle) ? s.headerStyle : d.headerStyle),
-    accent: hex(s.accent, d.accent),
-    bg: hex(s.bg, d.bg),
-    radius: num(s.radius, 0, 40, d.radius),
-    blur: num(s.blur, 0, 36, d.blur),
-    entrance: !!s.entrance,
-    hover: !!s.hover,
-  };
-
+  const data = normalize(p.settings);
   const ops: unknown[] = [db.delete(links)];
   if (vals.length) ops.push(db.insert(links).values(vals));
   ops.push(db.insert(settings).values({ id: 1, data }).onConflictDoUpdate({ target: settings.id, set: { data } }));
-  await db.batch(ops as [never, ...never[]]);
+  await db.batch(ops as [never, ...never[]]); // atomic
 
   revalidatePath("/");
 }

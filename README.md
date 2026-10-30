@@ -1,6 +1,6 @@
 # Bio page + /admin
 
-1. Vercel: create project from this repo, add Neon (Marketplace) and a Blob store (Storage tab).
-2. Add env vars from `.env.example` (Project Settings > Environment Variables).
-3. Locally: `vercel env pull .env.local && npm i && npm run db:push && npm run db:seed && npm run dev`
-4. Open `/admin`, sign in, edit, press Save. The public page refreshes instantly.
+1. Vercel: import repo, add Neon (Marketplace) and a Blob store (Storage tab).
+2. Env vars from `.env.example` (DATABASE_URL, ADMIN_PASSWORD, SESSION_SECRET, BLOB_READ_WRITE_TOKEN).
+3. `npm run build` runs `db:push` (adds the new uid / shortcut_of columns) and the safe seed automatically.
+4. Open `/admin`, edit with the live preview, press Save. The public page refreshes instantly.

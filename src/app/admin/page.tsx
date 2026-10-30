@@ -1,8 +1,8 @@
-import { asc, eq } from "drizzle-orm";
+import { asc } from "drizzle-orm";
 import { db } from "@/db";
 import { links, settings } from "@/db/schema";
 import { isAdmin } from "@/lib/auth";
-import { defaultSettings, type Row } from "@/lib/theme";
+import { normalize, type Row } from "@/lib/theme";
 import { login } from "./actions";
 import Editor from "./editor";
 import "./admin.css";
@@ -25,18 +25,15 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
       </main>
     );
   }
-  const [rows, s] = await Promise.all([
-    db.select().from(links).orderBy(asc(links.position)),
-    db.select().from(settings).where(eq(settings.id, 1)),
-  ]);
+  const [rows, s] = await Promise.all([db.select().from(links).orderBy(asc(links.position)), db.select().from(settings)]);
   const initial: Row[] = rows.map((r) => ({
-    key: String(r.id), kind: r.kind as Row["kind"], title: r.title, url: r.url,
-    icon: r.icon ?? "", image: r.image ?? "", width: r.width as Row["width"],
-    visible: r.visible, shortcut: r.shortcut ?? false,
+    key: r.uid ?? `id-${r.id}`, kind: r.kind === "social" ? "social" : "card", title: r.title, url: r.url,
+    icon: r.icon ?? "", image: r.image ?? "", width: r.width === "half" ? "half" : "full",
+    visible: r.visible, shortcutOf: r.shortcutOf ?? "",
   }));
   return (
     <main className="adm">
-      <Editor initial={initial} initialSettings={{ ...defaultSettings, ...s[0]?.data }} />
+      <Editor initial={initial} initialSettings={normalize(s[0]?.data)} />
     </main>
   );
 }
