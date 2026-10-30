@@ -31,7 +31,8 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
   ]);
   const initial: Row[] = rows.map((r) => ({
     key: String(r.id), kind: r.kind as Row["kind"], title: r.title, url: r.url,
-    icon: r.icon ?? "", image: r.image ?? "", width: r.width as Row["width"], visible: r.visible,
+    icon: r.icon ?? "", image: r.image ?? "", width: r.width as Row["width"],
+    visible: r.visible, shortcut: r.shortcut ?? false,
   }));
   return (
     <main className="adm">
