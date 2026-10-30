@@ -1,7 +1,14 @@
 export type Settings = {
   name: string;
+  bio: string;
   uid: string;
   avatar: string;
+  banner: string;
+  backgroundImage: string;
+  avatarPosition: "center" | "left" | "right";
+  profileLayout: "center" | "left" | "right";
+  socialsPosition: "top" | "bottom";
+  headerStyle: "card" | "minimal";
   accent: string;
   bg: string;
   radius: number;
@@ -12,17 +19,23 @@ export type Settings = {
 
 export const defaultSettings: Settings = {
   name: "HIGHEST IN THE ROOM",
+  bio: "",
   uid: "UID: 52388355297",
   avatar: "",
+  banner: "",
+  backgroundImage: "",
+  avatarPosition: "center",
+  profileLayout: "center",
+  socialsPosition: "top",
+  headerStyle: "card",
   accent: "#7dd3fc",
-  bg: "#0b0d12",
-  radius: 20,
-  blur: 16,
+  bg: "#090d14",
+  radius: 24,
+  blur: 22,
   entrance: true,
   hover: true,
 };
 
-// Official brand logos by URL (Simple Icons CDN). `slug` is stored per link.
 export const logoUrl = (slug: string, hex = "ffffff") =>
   `https://cdn.simpleicons.org/${slug}/${hex}`;
 
