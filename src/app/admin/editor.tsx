@@ -14,7 +14,7 @@ function Up({ onUrl, label = "Upload image" }: { onUrl: (u: string) => void; lab
     const f = input.files?.[0]; if (!f) return;
     const fd = new FormData(); fd.append("file", f);
     try { onUrl(await upload(fd)); } catch { alert("Upload failed (images up to 4 MB)."); }
-    e.currentTarget.value = "";
+    input.value = "";
   }} /></label>;
 }
 
