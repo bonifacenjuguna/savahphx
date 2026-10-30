@@ -8,7 +8,6 @@ import { links, settings } from "@/db/schema";
 import { isAdmin, makeToken, safeEq } from "@/lib/auth";
 import { defaultSettings, type Row, type Settings } from "@/lib/theme";
 
-// Best-effort brute-force limit (per server instance).
 const hits = new Map<string, { n: number; t: number }>();
 
 export async function login(fd: FormData) {
@@ -41,19 +40,21 @@ export async function upload(fd: FormData) {
   if (!(await isAdmin())) throw new Error("Unauthorized");
   const f = fd.get("file");
   if (!(f instanceof File) || !f.type.startsWith("image/") || f.size > 4e6) throw new Error("Bad file");
-  const { url } = await put(`img/${Date.now()}-${f.name.replace(/[^\w.-]/g, "_")}`, f, { access: "public" });
+  const safeName = f.name.replace(/[^\w.-]/g, "_");
+  const { url } = await put(`img/${Date.now()}-${safeName}`, f, { access: "public" });
   return url;
 }
 
 export async function saveAll(p: { rows: Row[]; settings: Settings }) {
   if (!(await isAdmin())) throw new Error("Unauthorized");
   const okUrl = (u: string) => /^(https?:\/\/|mailto:|tel:)/i.test(u);
-  const okImg = (u: string) => /^https:\/\//i.test(u);
+  const okImg = (u: string) => !u || /^https:\/\//i.test(u);
   const pos = { card: 0, social: 0 };
 
   const vals = p.rows.map((r) => {
     const kind = r.kind === "social" ? "social" : "card";
     if (!r.title.trim() || !okUrl(r.url.trim())) throw new Error("Bad link");
+    if (!okImg(r.image)) throw new Error("Image URLs must use HTTPS");
     return {
       kind, title: r.title.trim().slice(0, 80), url: r.url.trim(),
       icon: /^[a-z0-9]+$/.test(r.icon) ? r.icon : null,
@@ -64,19 +65,33 @@ export async function saveAll(p: { rows: Row[]; settings: Settings }) {
   });
 
   const s = p.settings, d = defaultSettings;
-  const num = (n: number, lo: number, hi: number, def: number) => (Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def);
-  const hex = (v: string, def: string) => (/^#[0-9a-f]{6}$/i.test(v) ? v : def);
+  const num = (n: number, lo: number, hi: number, def: number) =>
+    Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def;
+  const hex = (v: string, def: string) => /^#[0-9a-f]{6}$/i.test(v) ? v : def;
+  const image = (v: string) => /^https:\/\//i.test(v) ? v.slice(0, 2000) : "";
   const data: Settings = {
-    name: s.name.slice(0, 80), uid: s.uid.slice(0, 80), avatar: okImg(s.avatar) ? s.avatar : "",
-    accent: hex(s.accent, d.accent), bg: hex(s.bg, d.bg),
-    radius: num(s.radius, 0, 40, d.radius), blur: num(s.blur, 0, 30, d.blur),
-    entrance: !!s.entrance, hover: !!s.hover,
+    name: String(s.name ?? "").slice(0, 80),
+    bio: String(s.bio ?? "").slice(0, 500),
+    uid: String(s.uid ?? "").slice(0, 100),
+    avatar: image(s.avatar),
+    banner: image(s.banner),
+    backgroundImage: image(s.backgroundImage),
+    avatarPosition: (["center", "left", "right"].includes(s.avatarPosition) ? s.avatarPosition : d.avatarPosition),
+    profileLayout: (["center", "left", "right"].includes(s.profileLayout) ? s.profileLayout : d.profileLayout),
+    socialsPosition: (["top", "bottom"].includes(s.socialsPosition) ? s.socialsPosition : d.socialsPosition),
+    headerStyle: (["card", "minimal"].includes(s.headerStyle) ? s.headerStyle : d.headerStyle),
+    accent: hex(s.accent, d.accent),
+    bg: hex(s.bg, d.bg),
+    radius: num(s.radius, 0, 40, d.radius),
+    blur: num(s.blur, 0, 36, d.blur),
+    entrance: !!s.entrance,
+    hover: !!s.hover,
   };
 
   const ops: unknown[] = [db.delete(links)];
   if (vals.length) ops.push(db.insert(links).values(vals));
   ops.push(db.insert(settings).values({ id: 1, data }).onConflictDoUpdate({ target: settings.id, set: { data } }));
-  await db.batch(ops as [never, ...never[]]); // atomic
+  await db.batch(ops as [never, ...never[]]);
 
   revalidatePath("/");
 }
