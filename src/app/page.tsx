@@ -32,7 +32,7 @@ export default async function Home() {
     <nav className="socials" aria-label="Profile shortcuts">
       {shortcuts.map((item) => (
         <a key={item.id} href={item.url} aria-label={item.title} title={item.title} target="_blank" rel="noopener noreferrer">
-          {item.image ? <img src={item.image} alt="" /> : <BrandIcon slug={item.icon} size={28} />}
+          {item.image ? <img src={item.image} alt="" /> : item.icon ? <BrandIcon slug={item.icon} size={28} /> : null}
         </a>
       ))}
     </nav>
