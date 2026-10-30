@@ -36,9 +36,6 @@ export const defaultSettings: Settings = {
   hover: true,
 };
 
-export const logoUrl = (slug: string, hex = "ffffff") =>
-  `https://cdn.simpleicons.org/${slug}/${hex}`;
-
 export type Row = {
   key: string;
   kind: "card" | "social";
@@ -48,4 +45,5 @@ export type Row = {
   image: string;
   width: "full" | "half";
   visible: boolean;
+  shortcut: boolean;
 };
