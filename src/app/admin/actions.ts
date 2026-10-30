@@ -1,5 +1,4 @@
 "use server";
-import { put } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -36,31 +35,22 @@ export async function logout() {
   redirect("/admin");
 }
 
-export async function upload(fd: FormData) {
-  if (!(await isAdmin())) throw new Error("Unauthorized");
-  const f = fd.get("file");
-  if (!(f instanceof File) || !f.type.startsWith("image/") || f.size > 4e6) throw new Error("Bad file");
-  const safeName = f.name.replace(/[^\w.-]/g, "_");
-  const { url } = await put(`img/${Date.now()}-${safeName}`, f, { access: "public" });
-  return url;
-}
 
 export async function saveAll(p: { rows: Row[]; settings: Settings }) {
   if (!(await isAdmin())) throw new Error("Unauthorized");
   const okUrl = (u: string) => /^(https?:\/\/|mailto:|tel:)/i.test(u);
   const okImg = (u: string) => !u || /^https:\/\//i.test(u);
-  const pos = { card: 0, social: 0 };
+  let position = 0;
 
   const vals = p.rows.map((r) => {
-    const kind = r.kind === "social" ? "social" : "card";
     if (!r.title.trim() || !okUrl(r.url.trim())) throw new Error("Bad link");
     if (!okImg(r.image)) throw new Error("Image URLs must use HTTPS");
     return {
-      kind, title: r.title.trim().slice(0, 80), url: r.url.trim(),
+      kind: "card", title: r.title.trim().slice(0, 80), url: r.url.trim(),
       icon: /^[a-z0-9]+$/.test(r.icon) ? r.icon : null,
       image: okImg(r.image) ? r.image : null,
       width: r.width === "half" ? "half" : "full",
-      position: pos[kind]++, visible: !!r.visible,
+      position: position++, visible: !!r.visible, shortcut: !!r.shortcut,
     };
   });
 
