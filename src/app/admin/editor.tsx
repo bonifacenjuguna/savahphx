@@ -10,7 +10,8 @@ const SLUGS = ["instagram","whatsapp","tiktok","youtube","threads","facebook","x
 
 function Up({ onUrl, label = "Upload image" }: { onUrl: (u: string) => void; label?: string }) {
   return <label className="btn">{label}<input type="file" accept="image/*" hidden onChange={async (e) => {
-    const f = e.target.files?.[0]; if (!f) return;
+    const input = e.currentTarget;
+    const f = input.files?.[0]; if (!f) return;
     const fd = new FormData(); fd.append("file", f);
     try { onUrl(await upload(fd)); } catch { alert("Upload failed (images up to 4 MB)."); }
     e.currentTarget.value = "";
