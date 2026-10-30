@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
+import { ensureSchema } from "@/db/ensure";
 import { links, settings } from "@/db/schema";
 import { isAdmin, makeToken, safeEq } from "@/lib/auth";
 import { normalize, type Row, type Settings } from "@/lib/theme";
@@ -70,6 +71,7 @@ export async function saveAll(p: { rows: Row[]; settings: Settings }) {
     };
   });
 
+  await ensureSchema();
   const data = normalize(p.settings);
   const ops: unknown[] = [db.delete(links)];
   if (vals.length) ops.push(db.insert(links).values(vals));

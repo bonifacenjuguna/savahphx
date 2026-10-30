@@ -1,6 +1,7 @@
 import { asc } from "drizzle-orm";
 import type { Metadata } from "next";
 import { db } from "@/db";
+import { ensureSchema } from "@/db/ensure";
 import { links, settings } from "@/db/schema";
 import Page from "@/components/Page";
 import { defaultSettings, normalize, type Row } from "@/lib/theme";
@@ -10,6 +11,7 @@ export const dynamic = "force-static";
 
 async function load() {
   try {
+    await ensureSchema();
     const [r, s] = await Promise.all([db.select().from(links).orderBy(asc(links.position)), db.select().from(settings)]);
     const rows: Row[] = r.map((x) => ({
       key: x.uid ?? `id-${x.id}`, kind: x.kind === "social" ? "social" : "card", title: x.title, url: x.url,
@@ -17,7 +19,8 @@ async function load() {
       visible: x.visible, shortcutOf: x.shortcutOf ?? "",
     }));
     return { rows, t: normalize(s[0]?.data) };
-  } catch {
+  } catch (e) {
+    console.error("[bio] load failed:", e);
     return { rows: [] as Row[], t: defaultSettings };
   }
 }

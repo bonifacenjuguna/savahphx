@@ -1,5 +1,6 @@
 import { asc } from "drizzle-orm";
 import { db } from "@/db";
+import { ensureSchema } from "@/db/ensure";
 import { links, settings } from "@/db/schema";
 import { isAdmin } from "@/lib/auth";
 import { normalize, type Row } from "@/lib/theme";
@@ -25,7 +26,20 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
       </main>
     );
   }
-  const [rows, s] = await Promise.all([db.select().from(links).orderBy(asc(links.position)), db.select().from(settings)]);
+  let rows, s;
+  try {
+    await ensureSchema();
+    [rows, s] = await Promise.all([db.select().from(links).orderBy(asc(links.position)), db.select().from(settings)]);
+  } catch (e) {
+    console.error("[admin] load failed:", e);
+    return (
+      <main className="adm">
+        <h1>Admin</h1>
+        <p className="err">Database error: {e instanceof Error ? e.message : String(e)}</p>
+        <p>Check that DATABASE_URL is set for this environment in Vercel, then redeploy.</p>
+      </main>
+    );
+  }
   const initial: Row[] = rows.map((r) => ({
     key: r.uid ?? `id-${r.id}`, kind: r.kind === "social" ? "social" : "card", title: r.title, url: r.url,
     icon: r.icon ?? "", image: r.image ?? "", width: r.width === "half" ? "half" : "full",

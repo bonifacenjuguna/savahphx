@@ -2,6 +2,7 @@
   "name": "bio",
   "private": true,
   "scripts": {
+    "predev": "npm run db:push || echo db:push skipped",
     "dev": "next dev",
     "build": "npm run db:push && npm run db:seed && next build",
     "start": "next start",
