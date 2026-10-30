@@ -12,7 +12,12 @@ export const links = pgTable("links", {
   position: integer("position").notNull().default(0),
   visible: boolean("visible").notNull().default(true),
   uid: text("uid"), // stable key used by shortcuts
-  shortcutOf: text("shortcut_of"), // social icon mirrors the card with this uid
+  shortcutOf: text("shortcut_of"), // legacy (v2)
+  platform: text("platform"),
+  handle: text("handle"),
+  asIcon: boolean("as_icon").notNull().default(false),
+  color: boolean("color").notNull().default(false),
+  shape: text("shape"),
 });
 
 export const settings = pgTable("settings", {

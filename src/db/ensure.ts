@@ -13,6 +13,11 @@ export function ensureSchema() {
     await sql`CREATE TABLE IF NOT EXISTS settings (id integer PRIMARY KEY, data jsonb NOT NULL)`;
     await sql`ALTER TABLE links ADD COLUMN IF NOT EXISTS uid text`;
     await sql`ALTER TABLE links ADD COLUMN IF NOT EXISTS shortcut_of text`;
+    await sql`ALTER TABLE links ADD COLUMN IF NOT EXISTS platform text`;
+    await sql`ALTER TABLE links ADD COLUMN IF NOT EXISTS handle text`;
+    await sql`ALTER TABLE links ADD COLUMN IF NOT EXISTS as_icon boolean NOT NULL DEFAULT false`;
+    await sql`ALTER TABLE links ADD COLUMN IF NOT EXISTS color boolean NOT NULL DEFAULT false`;
+    await sql`ALTER TABLE links ADD COLUMN IF NOT EXISTS shape text`;
   })().catch((e) => {
     done = undefined; // retry on next request
     throw e;

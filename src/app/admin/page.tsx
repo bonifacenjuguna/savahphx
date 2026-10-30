@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { ensureSchema } from "@/db/ensure";
 import { links, settings } from "@/db/schema";
 import { isAdmin } from "@/lib/auth";
+import { fromDb } from "@/lib/rows";
 import { normalize, type Row } from "@/lib/theme";
 import { login } from "./actions";
 import Editor from "./editor";
@@ -40,11 +41,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
       </main>
     );
   }
-  const initial: Row[] = rows.map((r) => ({
-    key: r.uid ?? `id-${r.id}`, kind: r.kind === "social" ? "social" : "card", title: r.title, url: r.url,
-    icon: r.icon ?? "", image: r.image ?? "", width: r.width === "half" ? "half" : "full",
-    visible: r.visible, shortcutOf: r.shortcutOf ?? "",
-  }));
+  const initial: Row[] = fromDb(rows);
   return (
     <main className="adm">
       <Editor initial={initial} initialSettings={normalize(s[0]?.data)} />

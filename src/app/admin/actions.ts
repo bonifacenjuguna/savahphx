@@ -7,6 +7,7 @@ import { db } from "@/db";
 import { ensureSchema } from "@/db/ensure";
 import { links, settings } from "@/db/schema";
 import { isAdmin, makeToken, safeEq } from "@/lib/auth";
+import { byId, resolveUrl } from "@/lib/platforms";
 import { normalize, type Row, type Settings } from "@/lib/theme";
 
 // Best-effort brute-force limit (per server instance).
@@ -48,35 +49,30 @@ export async function upload(fd: FormData) {
 
 export async function saveAll(p: { rows: Row[]; settings: Settings }) {
   if (!(await isAdmin())) throw new Error("Unauthorized");
-  const okUrl = (u: string) => /^(https?:\/\/|mailto:|tel:)/i.test(u);
   const okImg = (u: string) => /^https:\/\//i.test(u);
-  const cardKeys = new Set(p.rows.filter((r) => r.kind === "card").map((r) => r.key));
-  const pos = { card: 0, social: 0 };
-
-  const vals = p.rows.map((r) => {
-    const kind = r.kind === "social" ? "social" : "card";
-    const sc = kind === "social" && cardKeys.has(r.shortcutOf) ? r.shortcutOf : null;
-    const target = sc ? p.rows.find((x) => x.key === sc) : undefined;
-    const url = (target?.url ?? r.url).trim();
-    const title = (r.title.trim() || target?.title || "").slice(0, 80);
-    if (!title || !okUrl(url)) throw new Error("Bad link");
+  const vals = p.rows.map((r, i) => {
+    const pl = byId(r.platform);
+    const { url, error } = resolveUrl(pl, r.handle, r.url);
+    const title = r.title.trim().slice(0, 80);
+    if (!title || error) throw new Error("Invalid link");
     return {
-      kind, title, url,
+      kind: "card", title, url,
       icon: /^[a-z0-9]+$/.test(r.icon) ? r.icon : null,
       image: okImg(r.image) ? r.image : null,
-      width: r.width === "half" ? "half" : "full",
-      position: pos[kind]++, visible: !!r.visible,
+      width: r.size === "half" || r.size === "third" ? r.size : "full",
+      position: i, visible: !!r.visible,
       uid: String(r.key).replace(/[^\w-]/g, "").slice(0, 64) || crypto.randomUUID(),
-      shortcutOf: sc,
+      shortcutOf: null, platform: pl?.id ?? "custom",
+      handle: pl && pl.kind !== "url" ? r.handle.trim().slice(0, 200) : null,
+      asIcon: !!r.asIcon, color: !!r.color,
+      shape: ["circle", "rounded", "square"].includes(r.shape) ? r.shape : null,
     };
   });
-
   await ensureSchema();
   const data = normalize(p.settings);
   const ops: unknown[] = [db.delete(links)];
   if (vals.length) ops.push(db.insert(links).values(vals));
   ops.push(db.insert(settings).values({ id: 1, data }).onConflictDoUpdate({ target: settings.id, set: { data } }));
   await db.batch(ops as [never, ...never[]]); // atomic
-
   revalidatePath("/");
 }
