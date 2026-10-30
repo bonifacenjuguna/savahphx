@@ -4,7 +4,6 @@ import { upload as uploadBlob } from "@vercel/blob/client";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { BrandIcon, platformIcons } from "@/lib/platform-icons";
 import { type Row, type Settings } from "@/lib/theme";
 import { logout, saveAll } from "./actions";
 
@@ -40,28 +39,59 @@ function Up({ onUrl, label = "Upload image" }: { onUrl: (u: string) => void; lab
 function IconPicker({ value, onChange }: { value: string; onChange: (slug: string) => void }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const matches = useMemo(() => platformIcons.filter((icon) =>
+  const [icons, setIcons] = useState<{ slug: string; title: string; hex: string; path: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const loadIcons = async () => {
+    if (icons.length || loading) return;
+    setLoading(true); setError("");
+    try {
+      // Load the large brand-icon package only when the logo picker is opened.
+      // Keeping it out of the initial editor bundle lets mobile browsers hydrate
+      // the editor and activate its controls without downloading thousands of SVGs.
+      const mod = await import("simple-icons");
+      const names = [
+        "siInstagram", "siWhatsapp", "siTiktok", "siYoutube", "siThreads",
+        "siFacebook", "siX", "siGithub", "siTelegram", "siDiscord", "siSnapchat",
+        "siTwitch", "siSpotify", "siGmail", "siPatreon", "siPaypal", "siLinkedin",
+        "siReddit", "siPinterest", "siTumblr", "siSoundcloud", "siSteam",
+        "siPlaystation", "siXbox", "siRoblox", "siApple", "siGoogle",
+        "siGoogleplay", "siAmazon", "siNetflix", "siSignal", "siMastodon",
+        "siBluesky", "siNotion", "siFigma", "siBehance", "siDribbble", "siMedium",
+        "siSubstack", "siWordpress", "siStackoverflow", "siCodepen", "siGitlab",
+        "siBitbucket", "siNpm", "siKofi", "siBuymeacoffee", "siCashapp", "siWise",
+        "siBinance", "siCoinbase", "siOpenai",
+      ];
+      const source = mod as unknown as Record<string, { title: string; slug: string; hex: string; path: string } | undefined>;
+      setIcons(names.map((name) => source[name]).filter((x): x is { title: string; slug: string; hex: string; path: string } => !!x));
+    } catch {
+      setError("The logo library could not be loaded. You can still use a custom image.");
+    } finally { setLoading(false); }
+  };
+  const selected = icons.find((icon) => icon.slug === value);
+  const matches = icons.filter((icon) =>
     icon.title.toLowerCase().includes(query.toLowerCase()) ||
     icon.slug.toLowerCase().includes(query.toLowerCase())
-  ), [query]);
-  const selected = platformIcons.find((icon) => icon.slug === value);
+  );
   return <div className="icon-picker">
     <div className="icon-picker-current">
-      <span className="icon-current-mark">{selected ? <BrandIcon slug={value} size={23} /> : <span>＋</span>}</span>
-      <span>{selected?.title ?? "No platform logo selected"}</span>
-      <button type="button" className="btn" onClick={() => setOpen((v) => !v)}>{open ? "Close logo library" : "Choose platform logo"}</button>
+      <span className="icon-current-mark">{selected ? <svg viewBox="0 0 24 24" width="23" height="23" style={{color:"#"+selected.hex}}><path fill="currentColor" d={selected.path}/></svg> : <span>＋</span>}</span>
+      <span>{selected?.title ?? (value ? value : "No platform logo selected")}</span>
+      <button type="button" className="btn" onClick={() => { const next = !open; setOpen(next); if (next) void loadIcons(); }}>{open ? "Close logo library" : "Choose platform logo"}</button>
       {value && <button type="button" className="btn" onClick={() => onChange("")}>Clear</button>}
     </div>
     {open && <div className="icon-library">
       <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search 50+ platform logos..." />
-      <div className="icon-library-grid">
+      {loading && <p className="hint">Loading logo library…</p>}
+      {error && <p className="upload-error">{error}</p>}
+      {!loading && !error && <div className="icon-library-grid">
         {matches.map((icon) => <button type="button" key={icon.slug} className={value === icon.slug ? "icon-option selected" : "icon-option"} onClick={() => { onChange(icon.slug); setOpen(false); setQuery(""); }}>
-          <BrandIcon slug={icon.slug} size={23} />
+          <svg viewBox="0 0 24 24" width="23" height="23" style={{color:"#"+icon.hex}}><path fill="currentColor" d={icon.path}/></svg>
           <span>{icon.title}</span>
         </button>)}
         {matches.length === 0 && <p className="hint">No matching logo in the local collection.</p>}
-      </div>
-      <small className="upload-note">These brand SVGs are bundled with the website. No external icon CDN is needed.</small>
+      </div>}
+      <small className="upload-note">Brand logos load only when this picker is opened.</small>
     </div>}
   </div>;
 }
@@ -74,7 +104,7 @@ function Item({ r, set, del }: { r: Row; set: (p: Partial<Row>) => void; del: ()
     <div className="row-summary">
       <button type="button" className="grip" style={{ touchAction: "none" }} {...attributes} {...listeners} aria-label="Drag to reorder">⠿</button>
       <button type="button" className="row-toggle" onClick={() => setExpanded((v) => !v)} aria-expanded={expanded}>
-        <span className="thumb">{pic ? <img src={pic} alt="" /> : r.icon ? <BrandIcon slug={r.icon} size={25} /> : <span>＋</span>}</span>
+        <span className="thumb">{pic ? <img src={pic} alt="" /> : r.icon ? <span className="icon-letter">{r.icon.slice(0, 1).toUpperCase()}</span> : <span>＋</span>}</span>
         <span className="row-summary-text"><strong>{r.title.trim() || "Untitled link"}</strong><small>{r.url.trim() || "Add a destination URL"}</small></span>
         {r.shortcut && <span className="shortcut-tag">Shortcut</span>}
         <span className="expand-indicator">{expanded ? "−" : "+"}</span>
@@ -167,7 +197,7 @@ export default function Editor({ initial, initialSettings }: { initial: Row[]; i
     </section>
 
     <section><h2>Link cards</h2><p className="hint">Every card is independent. Expand a card to edit it, choose a bundled platform logo, upload a custom icon, and optionally add its own URL as a profile shortcut. Drag cards to reorder them.</p>
-      <List rows={cards} setRows={setCards} /><button className="btn" onClick={() => setCards([...cards, mk()])}>＋ Add link card</button>
+      <List rows={cards} setRows={setCards} /><button type="button" className="btn" onClick={() => setCards((current) => [...current, mk()])}>＋ Add link card</button>
     </section>
     <div className="save"><span>{msg}</span><button className="btn pri" disabled={busy} onClick={save}>{busy ? "Saving..." : "Save profile"}</button></div>
   </>;
