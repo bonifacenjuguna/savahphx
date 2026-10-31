@@ -155,7 +155,7 @@ export function ImgField({ label, value, onChange }: { label: string; value: str
       try {
         const b = await upload(`img/${file.name.replace(/[^\w.-]/g, "_")}`, file, {
           access: "public", handleUploadUrl: "/api/upload", abortSignal: ctrl.signal,
-          onUploadProgress: (p) => { seen = Date.now(); setUp((u) => ({ ...u, pct: Math.round(p.percentage) })); },
+          onUploadProgress: (p) => { setUp((u) => ({ ...u, pct: Math.round(p.percentage) })); },
         });
         onChange(b.url);
         setUp({ phase: "done", pct: 100, msg: "Uploaded", name: file.name, size: file.size });
