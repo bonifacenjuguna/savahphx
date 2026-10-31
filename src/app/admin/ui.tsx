@@ -140,22 +140,25 @@ export function ImgField({ label, value, onChange }: { label: string; value: str
     try {
       if (!/^image\/(jpeg|png|webp|gif|avif)$/.test(f.type)) throw new Error("Use a JPG, PNG, WebP, GIF or AVIF image.");
       if (f.size > 10 * 1024 * 1024) throw new Error("That image is over 10 MB.");
-      const pre = await fetch("/api/upload").then(async (r) => ({ ...(await r.json()) })).catch(() => null);
-      if (!pre) throw new Error("Could not reach the server. Check your connection.");
-      if (pre.error) throw new Error(pre.error);
+      const preResponse = await fetch("/api/upload", { cache: "no-store", credentials: "same-origin" }).catch(() => null);
+      if (!preResponse) throw new Error("Could not reach the server. Check your connection.");
+      const pre = await preResponse.json().catch(() => ({}));
+      if (!preResponse.ok || pre.error) throw new Error(pre.error || `Upload check failed (HTTP ${preResponse.status}). Refresh the page and sign in again.`);
       if (!pre.blob) throw new Error("Image storage is not connected. In Vercel open Storage, create a Blob store, connect it to this project and redeploy.");
       setUp((u) => ({ ...u, msg: "Optimizing for fast loading" }));
       const file = await optimize(f);
       const ctrl = new AbortController();
       ctl.current = ctrl;
-      // Progress can pause near 90–95% while Blob finalizes the upload.
-      // Use a generous overall safety timeout instead of aborting on idle progress.
+      // The SDK first requests an authorization token, then transfers bytes.
+      // Keep these phases distinct so a zero-percent stall is diagnosable.
       const timeout = setTimeout(() => ctrl.abort(), 180_000);
-      setUp({ phase: "up", pct: 0, msg: "Uploading", name: file.name, size: file.size });
+      setUp({ phase: "up", pct: 0, msg: "Requesting secure upload access", name: file.name, size: file.size });
       try {
-        const b = await upload(`img/${file.name.replace(/[^\w.-]/g, "_")}`, file, {
+        const b = await upload(`img/${file.name.replace(/[^\\w.-]/g, "_")}`, file, {
           access: "public", handleUploadUrl: "/api/upload", abortSignal: ctrl.signal,
-          onUploadProgress: (p) => { setUp((u) => ({ ...u, pct: Math.round(p.percentage) })); },
+          onUploadProgress: (p) => {
+            setUp((u) => ({ ...u, msg: "Transferring image", pct: Math.round(p.percentage) }));
+          },
         });
         onChange(b.url);
         setUp({ phase: "done", pct: 100, msg: "Uploaded", name: file.name, size: file.size });
