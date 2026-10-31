@@ -1,3 +1,4 @@
+import "@/app/banner.css";
 import { byId, svgUri } from "@/lib/platforms";
 import { effSizes, emptyRow, logoUrl, type Row, type Settings } from "@/lib/theme";
 import CardMenu from "./CardMenu";
@@ -103,7 +104,8 @@ export default function Page({ rows, t, embedded }: { rows: Row[]; t: Settings; 
 
   const L = t.header;
   const showAv = t.showAvatar && L !== "hero";
-  const showBn = t.showBanner && L !== "classic";
+  // An uploaded banner always shows, whatever the layout (Classic gets a full-width strip on top).
+  const showBn = t.showBanner && (L !== "classic" || !!t.banner);
   const bn = t.banner || (L === "hero" ? t.avatar : "");
   const hasText = (t.showName && !!t.name) || (t.showTitle && !!t.title) || (t.showBio && !!t.bio);
   const showHd = t.showHeader && (showBn || showAv || hasText);
@@ -119,7 +121,7 @@ export default function Page({ rows, t, embedded }: { rows: Row[]; t: Settings; 
       </div>
       <main className={`wrap${showHd ? "" : " pt"}`}>
         {showHd ? (
-          <header className={`hd hd-${L}${showAv ? "" : " noav"}`}>
+          <header className={`hd hd-${L}${showAv ? "" : " noav"}${L === "classic" && showBn ? " hasbn" : ""}`}>
             {showBn && <div className="bn">{bn && <ZoomImg src={bn} />}</div>}
             <div className="sr">
               {showAv && (t.avatar ? <ZoomImg className="av" src={t.avatar} /> : <div className="av" />)}

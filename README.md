@@ -1,4 +1,4 @@
-# Bio page + /admin (v3.4)
+# Bio page + /admin (v3.5)
 
 1. Vercel: import the repo, add Neon (Marketplace) and a Blob store (Storage tab).
 2. Env vars from `.env.example`: DATABASE_URL, ADMIN_PASSWORD, SESSION_SECRET, BLOB_READ_WRITE_TOKEN.
@@ -21,3 +21,7 @@ v3.2 adds text and crypto wallet cards (the `qrcode` package makes the QR codes,
 - **Footer tag:** choose Fixed (flush bar on an edge, new default), Floating, or End of page, plus the edge (bottom, top, left, right) and alignment.
 - **Safe deploys:** the build only seeds a brand-new site. Once your site has saved settings, deployments never touch your name, bio, links or design. Fresh sites start with John Doe / example.com content.
 - **Dashboard header:** greeting with your photo and domain, quick buttons (copy link, view site, sign out), live save status and link counts.
+
+## v3.5
+- **Uploads, the real cause:** the connected Blob store was created as *private*, and the app asked it to store *public* files, so every upload was refused. The upload route now works with private stores (visitors get the image through `/api/img`) and still works with public stores. `@vercel/blob` upgraded to 2.3+.
+- **Banner:** an uploaded banner now shows in every layout (Classic included) instead of being silently ignored, and fills the banner area edge to edge.

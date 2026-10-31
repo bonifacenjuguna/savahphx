@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { upload } from "@vercel/blob/client";
 
 export const httpsErr = (v: string) => (v && !/^https:\/\//i.test(v) ? "Must start with https://" : undefined);
 
@@ -188,29 +187,15 @@ export function ImgField({ label, value, onChange, max = 1800 }: { label: string
         const watch = setInterval(() => { if (Date.now() - seen > ms) ctrl.abort(); }, 1000);
         return { ctrl, poke: () => { seen = Date.now(); }, stop: () => clearInterval(watch) };
       };
-      const fatal = (e: unknown) => cancelled.current || (e instanceof Error && /unauthor|sign in|not connected|too big|Use a JPG/i.test(e.message));
+      const fatal = (e: unknown) => cancelled.current || (e instanceof Error && !/^Network error$|abort/i.test(e.name + e.message));
       // Main lane: through our own server (small, simple, no handshake). Three tries, a stall just starts the next one.
-      if (file.size <= 4_400_000) {
+      if (file.size > 4_400_000) throw new Error("That image is still over 4 MB after shrinking. Try a smaller one.");
+      {
         for (let i = 1; i <= 3 && !url; i++) {
-          const g = guard(25000);
+          const g = guard(30000);
           setUp({ phase: "up", pct: 0, msg: i > 1 ? `Connection hiccup, retrying (${i}/3)` : "Uploading", name: file.name, size: file.size });
-          try { url = await viaServer(file, (n) => { g.poke(); setUp((u) => ({ ...u, pct: Math.min(99, n) })); }, g.ctrl.signal); }
+          try { url = await viaServer(file, (n) => { g.poke(); setUp((u) => ({ ...u, pct: Math.min(99, n), msg: n >= 100 ? "Saving to storage" : "Uploading" })); }, g.ctrl.signal); }
           catch (e) { lastErr = e; if (fatal(e)) throw e; await sleep(600 * i); }
-          finally { g.stop(); }
-        }
-      }
-      // Big files (huge GIFs) or a blocked lane: straight to Blob from the browser.
-      if (!url) {
-        for (let i = 1; i <= 2 && !url; i++) {
-          const g = guard(45000);
-          setUp({ phase: "up", pct: 0, msg: "Trying the direct lane", name: file.name, size: file.size });
-          try {
-            const b = await upload(`img/${name}`, file, {
-              access: "public", handleUploadUrl: "/api/upload", abortSignal: g.ctrl.signal, multipart: file.size > 3_000_000,
-              onUploadProgress: (p) => { g.poke(); setUp((u) => ({ ...u, pct: Math.min(99, Math.round(p.percentage)) })); },
-            });
-            url = b.url;
-          } catch (e) { lastErr = e; if (fatal(e)) throw e; await sleep(600 * i); }
           finally { g.stop(); }
         }
       }
