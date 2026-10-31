@@ -148,8 +148,9 @@ export function ImgField({ label, value, onChange }: { label: string; value: str
       const file = await optimize(f);
       const ctrl = new AbortController();
       ctl.current = ctrl;
-      let seen = Date.now();
-      const watch = setInterval(() => { if (Date.now() - seen > 30000) ctrl.abort(); }, 1000);
+      // Progress can pause near 90–95% while Blob finalizes the upload.
+      // Use a generous overall safety timeout instead of aborting on idle progress.
+      const timeout = setTimeout(() => ctrl.abort(), 180_000);
       setUp({ phase: "up", pct: 0, msg: "Uploading", name: file.name, size: file.size });
       try {
         const b = await upload(`img/${file.name.replace(/[^\w.-]/g, "_")}`, file, {
@@ -159,7 +160,7 @@ export function ImgField({ label, value, onChange }: { label: string; value: str
         onChange(b.url);
         setUp({ phase: "done", pct: 100, msg: "Uploaded", name: file.name, size: file.size });
         setTimeout(() => setUp((u) => (u.phase === "done" ? IDLE : u)), 2800);
-      } finally { clearInterval(watch); }
+      } finally { clearTimeout(timeout); if (ctl.current === ctrl) ctl.current = null; }
     } catch (e) {
       const stopped = e instanceof Error && /abort/i.test(e.name + e.message);
       setUp({ phase: "err", pct: 0, msg: stopped ? "Upload stopped. The connection stalled or you cancelled it." : e instanceof Error ? e.message : "Upload failed.", name: f.name, size: f.size });
