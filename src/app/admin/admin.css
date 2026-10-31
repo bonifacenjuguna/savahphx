@@ -220,3 +220,18 @@ button.cw{width:100%;text-align:left}
 .sb.dense .gh{margin-top:4px}
 .sb>.mini.hdpv{flex:none;align-self:start;box-sizing:border-box;padding:18px 16px;margin:2px 0 4px;height:calc(min(var(--av),120px) + 38px);min-height:calc(min(var(--av),120px) + 38px);isolation:isolate}
 .sb>.mini.hdpv .av{flex:none}
+
+/* v3.4: dashboard header */
+.top{position:sticky;top:0;z-index:40;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px 12px;margin:-18px -14px 18px;padding:calc(12px + env(safe-area-inset-top,0px)) 14px 12px;background:linear-gradient(180deg,#0b0d12f2,#0b0d12d9);-webkit-backdrop-filter:blur(14px) saturate(160%);backdrop-filter:blur(14px) saturate(160%);border-bottom:1px solid var(--bd)}
+.top>div:first-child{display:flex;align-items:center;gap:12px;flex-wrap:nowrap;min-width:0}
+.who .ava{width:46px;height:46px;flex:none;display:grid;place-items:center;overflow:hidden;border-radius:50%;background:linear-gradient(135deg,var(--ac),#6d5cff);color:#06101f;font-weight:800;font-size:1.1rem;box-shadow:0 0 0 2px #0b0d12,0 0 0 4px color-mix(in srgb,var(--ac) 55%,transparent),0 8px 24px color-mix(in srgb,var(--ac) 30%,transparent)}
+.who .ava img{width:100%;height:100%;object-fit:cover;display:block}
+.wt{min-width:0;display:grid;gap:2px}.wt h1{font-size:1.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wt small{color:#8b95aa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .acts{gap:8px;align-items:center}
+.top .ib,.top a.ib{display:grid;place-items:center;width:42px;height:42px;padding:0;border-radius:14px;background:#141a26;border:1px solid #28324a;color:#cfd6e6;text-decoration:none;transition:border-color .15s,transform .15s,color .15s}
+.top .ib:hover{border-color:var(--ac);color:#fff;transform:translateY(-1px)}
+.qs{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.qs .pill{display:inline-flex;align-items:center;gap:7px}.qs .pill .dot{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}.qs .pill.warn .dot{animation:pulse 1.2s ease-in-out infinite}
+.chipm{font-size:.78rem;padding:4px 10px;border-radius:99px;background:#141a26;border:1px solid #28324a;color:#aab4c8}.chipm b{color:#eef1f8}
+@media(min-width:1000px){.pv{top:96px}}

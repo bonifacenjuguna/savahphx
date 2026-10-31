@@ -24,7 +24,7 @@ export type Settings = {
   entranceStyle: (typeof ENTRANCES)[number]; hoverStyle: (typeof HOVERS)[number];
   avatarMotion: (typeof AVATAR_MOTIONS)[number]; bgMotion: (typeof BG_MOTIONS)[number]; speed: number; stagger: number;
   showHeader: boolean; showAvatar: boolean; showBanner: boolean; showName: boolean; showTitle: boolean; showBio: boolean;
-  poweredShow: boolean; poweredPos: "corner" | "footer"; poweredText: string; poweredName: string; poweredUrl: string;
+  poweredShow: boolean; poweredPos: "fixed" | "float" | "end"; poweredSide: "bottom" | "top" | "left" | "right"; poweredAlign: "start" | "center" | "end"; poweredText: string; poweredName: string; poweredUrl: string;
   poweredLogo: string; poweredPlatform: string; poweredColor: boolean;
 };
 
@@ -40,7 +40,7 @@ export const defaultSettings: Settings = {
   nameColor: "", titleColor: "", bioColor: "", cardColor: "", iconColor: "", footerColor: "",
   entrance: true, hover: true, entranceStyle: "rise", hoverStyle: "lift", avatarMotion: "none", bgMotion: "none", speed: 1, stagger: 70,
   showHeader: true, showAvatar: true, showBanner: true, showName: true, showTitle: true, showBio: true,
-  poweredShow: true, poweredPos: "corner", poweredText: "Powered by", poweredName: "John Doe", poweredUrl: "",
+  poweredShow: true, poweredPos: "fixed", poweredSide: "bottom", poweredAlign: "center", poweredText: "Powered by", poweredName: "John Doe", poweredUrl: "https://example.com",
   poweredLogo: "", poweredPlatform: "", poweredColor: false,
 };
 
@@ -129,7 +129,8 @@ export function normalize(raw: unknown): Settings {
     speed: Math.round(num(r.speed, 0.5, 2, d.speed) * 10) / 10, stagger: Math.round(num(r.stagger, 20, 200, d.stagger)),
     showHeader: bool(r.showHeader, true), showAvatar: bool(r.showAvatar, true), showBanner: bool(r.showBanner, true),
     showName: bool(r.showName, true), showTitle: bool(r.showTitle, true), showBio: bool(r.showBio, true),
-    poweredShow: bool(r.poweredShow, d.poweredShow), poweredPos: r.poweredPos === "footer" ? "footer" : "corner",
+    poweredShow: bool(r.poweredShow, d.poweredShow), poweredPos: r.poweredPos === "float" ? "float" : r.poweredPos === "end" || r.poweredPos === "footer" ? "end" : "fixed",
+    poweredSide: pick(r.poweredSide, ["bottom", "top", "left", "right"], "bottom"), poweredAlign: pick(r.poweredAlign, ["start", "center", "end"], "center"),
     poweredText: str(r.poweredText, d.poweredText, 40), poweredName: str(r.poweredName, d.poweredName, 40),
     poweredUrl: img(r.poweredUrl), poweredLogo: img(r.poweredLogo),
     poweredPlatform: str(r.poweredPlatform, "", 30).replace(/[^a-z0-9-]/g, ""), poweredColor: bool(r.poweredColor, false),
@@ -144,7 +145,7 @@ export const RESET_GROUPS: { id: string; name: string; content?: boolean; keys: 
   { id: "bg", name: "Background", keys: ["bgType", "bg", "bg2", "bgImage", "bgDim", "bgBlur"] },
   { id: "icons", name: "Icon row", keys: ["socialPos", "socialStyle", "socialSize", "iconShape"] },
   { id: "motion", name: "Motion", keys: ["entrance", "hover", "entranceStyle", "hoverStyle", "avatarMotion", "bgMotion", "speed", "stagger"] },
-  { id: "footer", name: "Footer tag", content: true, keys: ["poweredShow", "poweredPos", "poweredText", "poweredName", "poweredUrl", "poweredLogo", "poweredPlatform", "poweredColor", "footerColor"] },
+  { id: "footer", name: "Footer tag", content: true, keys: ["poweredShow", "poweredPos", "poweredSide", "poweredAlign", "poweredText", "poweredName", "poweredUrl", "poweredLogo", "poweredPlatform", "poweredColor", "footerColor"] },
 ];
 
 export type Layout = { id: string; name: string; at: number; s: Settings; rows?: Row[] };

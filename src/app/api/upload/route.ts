@@ -27,15 +27,21 @@ export async function POST(request: Request) {
   }
 }
 
-// Fallback lane: if the direct browser-to-Blob upload keeps stalling on a bad connection, the dashboard
-// sends the (already shrunk) image through here instead. Vercel allows about 4.5 MB per request body.
+// Main lane: the browser sends the (already shrunk) image here and the server stores it in Blob.
+// No token handshake and no completion callback, so there is nothing that can hang half way.
+// Vercel allows about 4.5 MB per request body; the dashboard shrinks photos far below that.
+export const maxDuration = 30;
 export async function PUT(request: Request) {
   if (!(await isAdmin())) return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
   const type = request.headers.get("content-type") ?? "";
   if (!/^image\/(jpeg|png|webp|gif|avif)$/.test(type)) return NextResponse.json({ error: "Use a JPG, PNG, WebP, GIF or AVIF image." }, { status: 400 });
+  if (!process.env.BLOB_READ_WRITE_TOKEN) return NextResponse.json({ error: "Image storage is not connected. In Vercel open Storage, create a Blob store, connect it to this project and redeploy." }, { status: 400 });
   const name = (new URL(request.url).searchParams.get("name") ?? "image").replace(/[^\w.-]/g, "_").slice(0, 80);
   try {
-    const b = await put(`img/${name}`, request.body as ReadableStream, { access: "public", contentType: type, addRandomSuffix: true });
+    const buf = Buffer.from(await request.arrayBuffer());
+    if (!buf.length) return NextResponse.json({ error: "The image arrived empty. Try again." }, { status: 400 });
+    if (buf.length > 4_500_000) return NextResponse.json({ error: "Image is too big for this lane." }, { status: 413 });
+    const b = await put(`img/${name}`, buf, { access: "public", contentType: type, addRandomSuffix: true });
     return NextResponse.json({ url: b.url });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 400 });

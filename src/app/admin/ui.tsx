@@ -147,6 +147,8 @@ function viaServer(file: File, onPct: (n: number) => void, signal: AbortSignal):
       catch { rej(new Error("Upload failed.")); }
     };
     x.onerror = () => rej(new Error("Network error"));
+    x.ontimeout = () => rej(new Error("Network error"));
+    x.timeout = 90000;
     x.onabort = () => rej(new DOMException("Aborted", "AbortError"));
     signal.addEventListener("abort", () => x.abort());
     x.send(file);
@@ -170,7 +172,7 @@ export function ImgField({ label, value, onChange, max = 1800 }: { label: string
     try {
       if (!/^image\/(jpeg|png|webp|gif|avif)$/.test(f.type)) throw new Error("Use a JPG, PNG, WebP, GIF or AVIF image.");
       if (f.size > 10 * 1024 * 1024) throw new Error("That image is over 10 MB.");
-      const pre = await fetch("/api/upload").then(async (r) => ({ ...(await r.json()) })).catch(() => null);
+      const pre = await fetch("/api/upload", { signal: AbortSignal.timeout(12000) }).then(async (r) => ({ ...(await r.json()) })).catch(() => null);
       if (!pre) throw new Error("Could not reach the server. Check your connection.");
       if (pre.error) throw new Error(pre.error);
       if (!pre.blob) throw new Error("Image storage is not connected. In Vercel open Storage, create a Blob store, connect it to this project and redeploy.");
@@ -179,35 +181,38 @@ export function ImgField({ label, value, onChange, max = 1800 }: { label: string
       const name = file.name.replace(/[^\w.-]/g, "_");
       let url = "";
       let lastErr: unknown;
-      // Lane 1: straight to Blob, up to 3 tries; a stall (no progress for 40s) just triggers the next try.
-      for (let i = 1; i <= 3 && !url; i++) {
+      const guard = (ms: number) => {
         const ctrl = new AbortController();
         ctl.current = ctrl;
         let seen = Date.now();
-        const watch = setInterval(() => { if (Date.now() - seen > 40000) ctrl.abort(); }, 1000);
-        setUp({ phase: "up", pct: 0, msg: i > 1 ? `Connection hiccup, retrying (${i}/3)` : "Uploading", name: file.name, size: file.size });
-        try {
-          const b = await upload(`img/${name}`, file, {
-            access: "public", handleUploadUrl: "/api/upload", abortSignal: ctrl.signal, multipart: file.size > 3_000_000,
-            onUploadProgress: (p) => { seen = Date.now(); setUp((u) => ({ ...u, pct: Math.min(99, Math.round(p.percentage)) })); },
-          });
-          url = b.url;
-        } catch (e) {
-          lastErr = e;
-          if (cancelled.current || (e instanceof Error && /unauthor|sign in/i.test(e.message))) throw e;
-          await sleep(700 * i);
-        } finally { clearInterval(watch); }
+        const watch = setInterval(() => { if (Date.now() - seen > ms) ctrl.abort(); }, 1000);
+        return { ctrl, poke: () => { seen = Date.now(); }, stop: () => clearInterval(watch) };
+      };
+      const fatal = (e: unknown) => cancelled.current || (e instanceof Error && /unauthor|sign in|not connected|too big|Use a JPG/i.test(e.message));
+      // Main lane: through our own server (small, simple, no handshake). Three tries, a stall just starts the next one.
+      if (file.size <= 4_400_000) {
+        for (let i = 1; i <= 3 && !url; i++) {
+          const g = guard(25000);
+          setUp({ phase: "up", pct: 0, msg: i > 1 ? `Connection hiccup, retrying (${i}/3)` : "Uploading", name: file.name, size: file.size });
+          try { url = await viaServer(file, (n) => { g.poke(); setUp((u) => ({ ...u, pct: Math.min(99, n) })); }, g.ctrl.signal); }
+          catch (e) { lastErr = e; if (fatal(e)) throw e; await sleep(600 * i); }
+          finally { g.stop(); }
+        }
       }
-      // Lane 2: through our own server (needs the image under Vercel's ~4.5 MB request limit).
-      if (!url && file.size <= 4_400_000) {
-        const ctrl = new AbortController();
-        ctl.current = ctrl;
-        let seen = Date.now();
-        const watch = setInterval(() => { if (Date.now() - seen > 60000) ctrl.abort(); }, 1000);
-        setUp({ phase: "up", pct: 0, msg: "Switching to the backup lane", name: file.name, size: file.size });
-        try {
-          url = await viaServer(file, (n) => { seen = Date.now(); setUp((u) => ({ ...u, pct: Math.min(99, n) })); }, ctrl.signal);
-        } catch (e) { lastErr = e; if (cancelled.current) throw e; } finally { clearInterval(watch); }
+      // Big files (huge GIFs) or a blocked lane: straight to Blob from the browser.
+      if (!url) {
+        for (let i = 1; i <= 2 && !url; i++) {
+          const g = guard(45000);
+          setUp({ phase: "up", pct: 0, msg: "Trying the direct lane", name: file.name, size: file.size });
+          try {
+            const b = await upload(`img/${name}`, file, {
+              access: "public", handleUploadUrl: "/api/upload", abortSignal: g.ctrl.signal, multipart: file.size > 3_000_000,
+              onUploadProgress: (p) => { g.poke(); setUp((u) => ({ ...u, pct: Math.min(99, Math.round(p.percentage)) })); },
+            });
+            url = b.url;
+          } catch (e) { lastErr = e; if (fatal(e)) throw e; await sleep(600 * i); }
+          finally { g.stop(); }
+        }
       }
       if (!url) throw lastErr instanceof Error && !/abort/i.test(lastErr.name + lastErr.message) ? lastErr : new Error("The connection kept stalling. Try again on a steadier signal.");
       onChange(url);

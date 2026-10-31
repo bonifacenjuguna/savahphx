@@ -69,7 +69,7 @@ export function Chip({ s, t, inert }: { s: Row; t: Settings; inert?: boolean }) 
 }
 
 export function Powered({ t, inline }: { t: Settings; inline?: boolean }) {
-  const cls = `pw surf pw-${inline ? "inline" : t.poweredPos}`;
+  const cls = `pw surf pw-${inline ? "inline" : t.poweredPos} s-${t.poweredSide} a-${t.poweredAlign}`;
   const ink = (t.footerColor || t.text).slice(1);
   const logo = t.poweredLogo ? <img className="pwl" src={t.poweredLogo} alt="" />
     : t.poweredPlatform && byId(t.poweredPlatform) ? <span className="pwl"><Ico r={{ ...emptyRow(), platform: t.poweredPlatform, color: t.poweredColor }} ink={ink} /></span>
@@ -112,7 +112,7 @@ export default function Page({ rows, t, embedded }: { rows: Row[]; t: Settings; 
   const pw = t.poweredShow && !!(t.poweredName || t.poweredText || t.poweredLogo || t.poweredPlatform);
 
   return (
-    <div className={`pg${embedded ? " emb" : ""}${t.avatarGlow ? " glow" : ""}${pw && t.poweredPos === "corner" ? " pwc" : ""}`} data-style={t.style}
+    <div className={`pg${embedded ? " emb" : ""}${t.avatarGlow ? " glow" : ""}${pw && t.poweredPos !== "end" ? ` pwc pwc-${t.poweredSide}` : ""}`} data-style={t.style}
       data-font={t.font} data-en={t.entrance ? t.entranceStyle : "none"} data-hv={t.hover ? t.hoverStyle : "none"} data-am={t.avatarMotion} data-apos={t.avatarPos} style={cssVars(t)}>
       <div className="bgfx" data-m={t.bgMotion} style={{ backgroundColor: t.bg, backgroundImage: bgImg }}>
         {t.bgType === "image" && t.bgImage && <img className="bgi" src={t.bgImage} alt="" style={{ filter: `blur(${t.bgBlur}px)` }} />}
@@ -150,9 +150,9 @@ export default function Page({ rows, t, embedded }: { rows: Row[]; t: Settings; 
             ))}
         </section>
         {botNav}
-        {pw && t.poweredPos === "footer" && <Powered t={t} />}
+        {pw && t.poweredPos === "end" && <Powered t={t} />}
       </main>
-      {pw && t.poweredPos === "corner" && <Powered t={t} />}
+      {pw && t.poweredPos !== "end" && <Powered t={t} />}
     </div>
   );
 }

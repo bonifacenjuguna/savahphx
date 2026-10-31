@@ -1,4 +1,5 @@
 "use client";
+import NetLogo from "./NetLogo";
 import { useEffect, useRef, useState } from "react";
 import { netById, shortAddr } from "@/lib/crypto";
 import type { Row } from "@/lib/theme";
@@ -74,11 +75,10 @@ export function WalletCard({ r, cls, i }: { r: Row; cls: string; i: number }) {
   const net = netById(r.network);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const tick = net?.tick ?? "COIN";
   return (
     <div ref={ref} className={`card surf wallet ${cls}`} style={{ "--i": i, "--net": net?.color ?? "#8a93a8" } as React.CSSProperties}>
       <button type="button" className="cl" data-tk={r.key} data-ta="open" data-tt={r.title} aria-label={`Open ${r.title} wallet`} onClick={() => setOpen(true)}>
-        <span className="nbg" aria-hidden>{tick}</span>
+        <NetLogo net={net} />
         <span className="nt"><b className="wn">{r.title}</b><small className="mono">{shortAddr(r.body)}</small></span>
       </button>
       <CopyBtn text={r.body} id={r.key} title={r.title} label={`Copy ${r.title} address`} />
@@ -86,7 +86,7 @@ export function WalletCard({ r, cls, i }: { r: Row; cls: string; i: number }) {
         <Modal anchor={ref} onClose={() => setOpen(false)}>
           <div className="mp wm" role="dialog" aria-label={`${r.title} wallet`} style={{ "--net": net?.color ?? "#8a93a8" } as React.CSSProperties}>
             <header>
-              <span className="nbg lg" aria-hidden>{tick}</span>
+              <NetLogo net={net} lg />
               <div className="wh"><b>{r.title}</b><small>{net?.name ?? "Wallet"}</small></div>
               <button type="button" className="mx" aria-label="Close" onClick={() => setOpen(false)}><Close /></button>
             </header>

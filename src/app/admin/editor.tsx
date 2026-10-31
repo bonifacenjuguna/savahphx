@@ -1,4 +1,5 @@
 "use client";
+import NetLogo from "@/components/NetLogo";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -51,7 +52,7 @@ function validate(rows: Row[]) {
 
 function Thumb({ r }: { r: Row }) {
   if (r.type === "text") return <span className="th"><Gl n="text" s={20} /></span>;
-  if (r.type === "wallet") { const n = netById(r.network); return <span className="th"><span className="nbg" style={{ "--net": n?.color ?? "#8a93a8" } as React.CSSProperties}>{n?.tick ?? "COIN"}</span></span>; }
+  if (r.type === "wallet") return <span className="th"><NetLogo net={netById(r.network)} /></span>;
   return <span className="th"><Ico r={r} ink="ffffff" className="ti" /></span>;
 }
 
@@ -84,7 +85,7 @@ function NetPicker({ value, onPick, onClose }: { value: string; onPick: (id: str
       <p className="mut">Pick the exact network. Sending on the wrong one can lose funds.</p>
       {NETS.map((n) => (
         <button type="button" key={n.id} className={"pk wide" + (value === n.id ? " on" : "")} onClick={() => onPick(n.id)}>
-          <span className="th"><span className="nbg" style={{ "--net": n.color } as React.CSSProperties}>{n.tick}</span></span><span>{n.name}</span>
+          <span className="th"><NetLogo net={n} /></span><span>{n.name}</span>
         </button>
       ))}
     </Sheet>
@@ -127,7 +128,7 @@ function LinkSheet({ r, t, e, tried, upd, onClose, del, dup, pick, pickNet }: { 
   if (r.type === "wallet") return (
     <Sheet title={r.title || "Crypto wallet"} onClose={onClose}>
       <button type="button" className="pf" onClick={pickNet}>
-        <span className="th"><span className="nbg" style={{ "--net": net?.color ?? "#8a93a8" } as React.CSSProperties}>{net?.tick ?? "COIN"}</span></span>
+        <span className="th"><NetLogo net={net} /></span>
         <span><b>{net?.name ?? "Choose a network"}</b><small>Tap to change network</small></span>
       </button>
       <Field label="Title" error={tried ? e.title : undefined}><input className="in" value={r.title} placeholder="e.g. Bitcoin donations" onChange={(x) => upd({ title: x.target.value })} /></Field>
@@ -373,13 +374,46 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
   ];
   const close = () => { setPanel(null); setSub(null); };
   const dots = (v: Partial<Settings>) => <span className="dots3">{[v.bg, v.accent, v.text].map((c, i) => <i key={i} style={{ background: c }} />)}</span>;
+  const [host, setHost] = useState("");
+  const [greet, setGreet] = useState("Dashboard");
+  useEffect(() => {
+    setHost(window.location.host);
+    const h = new Date().getHours();
+    setGreet(h < 5 ? "Burning the midnight oil" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening");
+  }, []);
+  const copySite = async () => {
+    try { await navigator.clipboard.writeText(window.location.origin); say("Site link copied"); } catch { say(window.location.origin); }
+  };
   const sample = (i: number, w: "full" | "half") => <div className={`card surf ${w}`} style={{ "--i": i } as React.CSSProperties}><span className="cl"><span className="tt">Sample card</span></span></div>;
 
   return (
     <div className={"app" + (prefs.compact ? " compact" : "")} style={{ "--ac": prefs.accent } as React.CSSProperties}>
       <header className="top">
-        <div><h1>Dashboard</h1><span className={"pill" + (dirty ? " warn" : "")}>{dirty ? "Unsaved changes" : "All changes saved"}</span></div>
-        <div className="acts"><a className="btn" href="/" target="_blank">View site</a><form action={logout}><button className="btn">Sign out</button></form></div>
+        <div className="who">
+          <span className="ava">{s.avatar ? <img src={s.avatar} alt="" /> : (s.name || "?").trim().charAt(0).toUpperCase()}</span>
+          <div className="wt">
+            <h1>{greet}{s.name ? `, ${s.name.split(" ")[0]}` : ""}</h1>
+            <small>{host || "your site"}</small>
+          </div>
+        </div>
+        <div className="acts">
+          <button type="button" className="ib" aria-label="Copy site link" title="Copy site link" onClick={copySite}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 0 1 2-2h9" /></svg>
+          </button>
+          <a className="ib" href="/" target="_blank" rel="noopener" aria-label="View site" title="View site">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 4h6v6M20 4l-9 9" /><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4" /></svg>
+          </a>
+          <form action={logout}>
+            <button className="ib" aria-label="Sign out" title="Sign out">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5M21 12H9" /></svg>
+            </button>
+          </form>
+        </div>
+        <div className="qs">
+          <span className={"pill" + (dirty ? " warn" : "")}><i className="dot" />{dirty ? "Unsaved changes" : "All changes saved"}</span>
+          <span className="chipm"><b>{rows.filter((r) => r.visible).length}</b> live link{rows.filter((r) => r.visible).length === 1 ? "" : "s"}</span>
+          <span className="chipm"><b>{rows.filter((r) => r.type === "link" && r.asIcon).length}</b> in icon row</span>
+        </div>
       </header>
 
       <div className="shell">
@@ -549,7 +583,11 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
         <Sheet title="Footer tag" onClose={close}>
           <Mini t={s}><Powered t={s} inline /></Mini>
           <Switch on={s.poweredShow} onChange={(v) => set("poweredShow", v)} label="Show footer tag" />
-          <Field label="Position"><Seg value={s.poweredPos} onChange={(v) => set("poweredPos", v)} options={[{ v: "corner", l: "Bottom corner" }, { v: "footer", l: "End of page" }]} /></Field>
+          <Field label="Style" hint="Fixed sits flush on an edge like a bar. Floating hovers as a pill. End of page scrolls with your links."><Seg value={s.poweredPos} onChange={(v) => set("poweredPos", v)} options={[{ v: "fixed", l: "Fixed" }, { v: "float", l: "Floating" }, { v: "end", l: "End of page" }]} /></Field>
+          {s.poweredPos !== "end" && <>
+            <Field label="Edge"><Seg value={s.poweredSide} onChange={(v) => set("poweredSide", v)} options={[{ v: "bottom", l: "Bottom" }, { v: "top", l: "Top" }, { v: "left", l: "Left" }, { v: "right", l: "Right" }]} /></Field>
+            <Field label="Alignment"><Seg value={s.poweredAlign} onChange={(v) => set("poweredAlign", v)} options={s.poweredSide === "left" || s.poweredSide === "right" ? [{ v: "start", l: "Top" }, { v: "center", l: "Middle" }, { v: "end", l: "Bottom" }] : [{ v: "start", l: "Left" }, { v: "center", l: "Center" }, { v: "end", l: "Right" }]} /></Field>
+          </>}
           <Field label="Text"><input className="in" value={s.poweredText} onChange={(e) => set("poweredText", e.target.value)} /></Field>
           <Field label="Name"><input className="in" value={s.poweredName} onChange={(e) => set("poweredName", e.target.value)} /></Field>
           <Field label="Link" error={sErr.poweredUrl} hint="Makes the whole tag clickable. Leave empty for no link."><input className="in" value={s.poweredUrl} placeholder="https://" autoCapitalize="none" onChange={(e) => set("poweredUrl", e.target.value)} /></Field>
