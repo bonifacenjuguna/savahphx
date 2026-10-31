@@ -10,8 +10,8 @@ export async function GET() {
 
 // Browser uploads straight to Blob (up to 10 MB), so Vercel's small request-body limit never applies.
 export async function POST(request: Request) {
-  const body = (await request.json()) as HandleUploadBody;
   try {
+    const body = (await request.json()) as HandleUploadBody;
     const json = await handleUpload({
       body, request,
       onBeforeGenerateToken: async () => {
