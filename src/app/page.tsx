@@ -14,7 +14,7 @@ async function load() {
   try {
     await ensureSchema();
     const [r, s] = await Promise.all([db.select().from(links).orderBy(asc(links.position)), db.select().from(settings)]);
-    return { rows: fromDb(r), t: normalize(s[0]?.data) };
+    return { rows: fromDb(r), t: normalize(s.find((x) => x.id === 1)?.data) };
   } catch (e) {
     console.error("[bio] load failed:", e);
     return { rows: [] as Row[], t: defaultSettings };

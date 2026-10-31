@@ -1,4 +1,4 @@
-.adm{--ac:#8ab4ff;--bd:#222b3b;--sf:#10141c;--in:#0c1018;max-width:1160px;margin:auto;padding:18px 14px 120px;color:#eef1f8;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+.adm{color-scheme:dark;--ac:#8ab4ff;--bd:#222b3b;--sf:#10141c;--in:#0c1018;max-width:1160px;margin:auto;padding:18px 14px 120px;color:#eef1f8;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
 .adm,.adm *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 .adm ::selection{background:#8ab4ff55;color:#fff}
 .adm button,.adm .btn{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
@@ -69,7 +69,7 @@ body:has(.adm){background:#0a0c11}
 .fh{color:#7d889e;font-size:.8rem}.fe{color:#ff9a9a;font-size:.82rem;font-style:normal}
 .in,.adorn{width:100%;min-height:46px;padding:0 14px;background:var(--in);border:1px solid #28324a;border-radius:12px;transition:border-color .15s,box-shadow .15s}
 textarea.in{padding:12px 14px;resize:vertical}
-.in:focus,.adorn:focus-within{border-color:var(--ac);box-shadow:0 0 0 3px #8ab4ff22}
+.in:focus,.adorn:focus-within{border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 20%,transparent)}
 .bad .in,.bad .adorn{border-color:#c55}
 .adorn{display:flex;align-items:center;gap:6px}.adorn span{color:#8b95aa}
 .adorn input{flex:1;min-width:0;height:44px;background:none;border:0}
@@ -82,7 +82,7 @@ textarea.in{padding:12px 14px;resize:vertical}
 .seg{display:flex;flex-wrap:wrap;gap:4px;padding:4px;background:var(--in);border:1px solid #28324a;border-radius:14px}
 .seg button{flex:1 1 auto;min-height:38px;padding:0 12px;border:0;border-radius:10px;background:none;color:#aab4c8;text-transform:capitalize;transition:background .15s,color .15s}
 .seg button:hover{background:#171e2c}
-.seg button.on{background:var(--ac);color:#06101f;font-weight:650;box-shadow:0 2px 10px #8ab4ff40}
+.seg button.on{background:var(--ac);color:#06101f;font-weight:650;box-shadow:0 2px 10px color-mix(in srgb,var(--ac) 35%,transparent)}
 .swr{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 14px;background:var(--in);border:1px solid #28324a;border-radius:14px}
 .swr span{display:grid;gap:2px}.swr i{font-style:normal}.swr small{color:#7d889e}
 .tg{position:relative;width:48px;height:28px;flex:none;padding:0;border:0;border-radius:99px;background:#2a3346;transition:background .2s}
@@ -118,3 +118,26 @@ textarea.in{padding:12px 14px;resize:vertical}
 .login form{display:grid;gap:12px;width:min(340px,90vw)}
 .login input{min-height:48px;padding:0 14px;background:var(--in);border:1px solid #28324a;border-radius:12px}
 .login .err,.err{color:#ff9a9a}
+
+.app{display:contents}
+.compact .lr{min-height:50px;margin-bottom:6px}.compact .th{width:34px;height:34px}.compact .lt small{display:none}
+.mini{border:1px dashed #2f3a52}
+.ov.c{align-items:center;justify-content:center;z-index:90}
+.cm{width:min(360px,92vw);max-height:92dvh;overflow:auto;display:grid;gap:14px;padding:16px;background:#0e121a;border:1px solid #2a3447;border-radius:22px;animation:up .2s ease-out}
+.cmh{display:flex;justify-content:space-between;align-items:center}
+.prev{height:56px;border-radius:14px;border:1px solid #ffffff26}
+.adm input.cr{height:16px;border-radius:99px;-webkit-appearance:none;appearance:none}
+.adm input.cr::-webkit-slider-runnable-track{background:transparent;height:16px}
+.adm input.cr::-webkit-slider-thumb{margin-top:-3px;width:22px;height:22px;background:#fff;border:3px solid #0e121a;box-shadow:0 0 0 2px #fff}
+.adm input.cr::-moz-range-track{background:transparent}
+.sws{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
+.sws button{aspect-ratio:1;border-radius:50%;border:2px solid #ffffff22;padding:0}
+.sws button.on{border-color:#fff;box-shadow:0 0 0 3px var(--ac)}
+.sws.big{grid-template-columns:repeat(6,44px)}
+button.cw{width:100%;text-align:left}
+.mi{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;text-align:left;background:var(--in);border:1px solid #28324a;border-radius:16px;transition:border-color .15s}
+.mi:hover{border-color:var(--ac)}.mi span{display:grid;gap:3px}.mi small{color:#7d889e}
+.lay{display:grid;gap:10px;padding:12px;background:var(--in);border:1px solid #28324a;border-radius:16px}
+.lay.on{border-color:var(--ac);box-shadow:inset 0 0 0 1px var(--ac)}
+.lh{display:flex;align-items:center;gap:10px}
+.btn:disabled{opacity:.45;cursor:not-allowed}

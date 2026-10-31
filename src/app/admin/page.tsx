@@ -4,7 +4,7 @@ import { ensureSchema } from "@/db/ensure";
 import { links, settings } from "@/db/schema";
 import { isAdmin } from "@/lib/auth";
 import { fromDb } from "@/lib/rows";
-import { normalize, type Row } from "@/lib/theme";
+import { normalize, type Layout, type Row } from "@/lib/theme";
 import { login } from "./actions";
 import Editor from "./editor";
 import "./admin.css";
@@ -42,9 +42,10 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
     );
   }
   const initial: Row[] = fromDb(rows);
+  const layouts = ((s.find((x) => x.id === 2)?.data as { layouts?: Layout[] } | undefined)?.layouts ?? []) as Layout[];
   return (
     <main className="adm">
-      <Editor initial={initial} initialSettings={normalize(s[0]?.data)} />
+      <Editor initial={initial} initialSettings={normalize(s.find((x) => x.id === 1)?.data)} initialLayouts={layouts} />
     </main>
   );
 }

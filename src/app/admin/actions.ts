@@ -1,5 +1,4 @@
 "use server";
-import { put } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -8,7 +7,8 @@ import { ensureSchema } from "@/db/ensure";
 import { links, settings } from "@/db/schema";
 import { isAdmin, makeToken, safeEq } from "@/lib/auth";
 import { byId, resolveUrl } from "@/lib/platforms";
-import { normalize, type Row, type Settings } from "@/lib/theme";
+import { cleanRow } from "@/lib/rows";
+import { normalize, type Layout, type Row, type Settings } from "@/lib/theme";
 
 // Best-effort brute-force limit (per server instance).
 const hits = new Map<string, { n: number; t: number }>();
@@ -39,14 +39,6 @@ export async function logout() {
   redirect("/admin");
 }
 
-export async function upload(fd: FormData) {
-  if (!(await isAdmin())) throw new Error("Unauthorized");
-  const f = fd.get("file");
-  if (!(f instanceof File) || !f.type.startsWith("image/") || f.size > 4e6) throw new Error("Bad file");
-  const { url } = await put(`img/${Date.now()}-${f.name.replace(/[^\w.-]/g, "_")}`, f, { access: "public" });
-  return url;
-}
-
 export async function saveAll(p: { rows: Row[]; settings: Settings }) {
   if (!(await isAdmin())) throw new Error("Unauthorized");
   const okImg = (u: string) => /^https:\/\//i.test(u);
@@ -75,4 +67,17 @@ export async function saveAll(p: { rows: Row[]; settings: Settings }) {
   ops.push(db.insert(settings).values({ id: 1, data }).onConflictDoUpdate({ target: settings.id, set: { data } }));
   await db.batch(ops as [never, ...never[]]); // atomic
   revalidatePath("/");
+}
+
+export async function saveLayouts(list: Layout[]) {
+  if (!(await isAdmin())) throw new Error("Unauthorized");
+  const layouts = list.slice(0, 20).map((l) => ({
+    id: String(l.id).replace(/[^\w-]/g, "").slice(0, 64) || crypto.randomUUID(),
+    name: String(l.name).trim().slice(0, 40) || "Untitled", at: Number(l.at) || Date.now(),
+    s: normalize(l.s), rows: Array.isArray(l.rows) ? l.rows.slice(0, 80).map(cleanRow) : undefined,
+  }));
+  if (JSON.stringify(layouts).length > 400_000) throw new Error("Too large");
+  await ensureSchema();
+  const data = { layouts };
+  await db.insert(settings).values({ id: 2, data }).onConflictDoUpdate({ target: settings.id, set: { data } });
 }

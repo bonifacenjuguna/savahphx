@@ -1,5 +1,4 @@
 import { boolean, integer, jsonb, pgTable, serial, text } from "drizzle-orm/pg-core";
-import type { Settings } from "@/lib/theme";
 
 export const links = pgTable("links", {
   id: serial("id").primaryKey(),
@@ -22,5 +21,5 @@ export const links = pgTable("links", {
 
 export const settings = pgTable("settings", {
   id: integer("id").primaryKey(),
-  data: jsonb("data").$type<Settings>().notNull(),
+  data: jsonb("data").$type<Record<string, unknown>>().notNull(),
 });

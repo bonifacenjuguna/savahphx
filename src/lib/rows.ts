@@ -28,3 +28,16 @@ export function fromDb(rows: DbRow[]): Row[] {
   }
   return out;
 }
+
+export function cleanRow(x: unknown): Row {
+  const o = (x && typeof x === "object" ? x : {}) as Record<string, unknown>;
+  const s = (v: unknown, m = 300) => (typeof v === "string" ? v.slice(0, m) : "");
+  const img = s(o.image, 500);
+  return {
+    key: s(o.key, 64).replace(/[^\w-]/g, "") || crypto.randomUUID(), platform: s(o.platform, 30), handle: s(o.handle, 200),
+    title: s(o.title, 80), url: s(o.url, 500), icon: s(o.icon, 40).toLowerCase().replace(/[^a-z0-9]/g, ""),
+    image: /^https:\/\//i.test(img) ? img : "", size: o.size === "half" || o.size === "third" ? o.size : "full",
+    visible: o.visible !== false, asIcon: !!o.asIcon, color: !!o.color,
+    shape: (SHAPES.includes(o.shape as string) ? o.shape : "") as Row["shape"],
+  };
+}

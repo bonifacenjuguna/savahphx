@@ -10,11 +10,13 @@ export type Settings = {
   header: (typeof LAYOUTS)[number]; align: (typeof AL)[number];
   avatarShape: (typeof SH)[number]; avatarSize: number; avatarPos: (typeof AL)[number]; avatarGlow: boolean;
   titleSize: number; bioSize: number; upper: boolean; font: (typeof FONTS)[number];
-  socialPos: "top" | "bottom" | "both"; socialStyle: "plain" | "chip"; socialSize: number; iconShape: (typeof SH)[number];
+  socialPos: "top" | "bottom" | "both" | "off"; socialStyle: "plain" | "chip"; socialSize: number; iconShape: (typeof SH)[number];
   style: (typeof STYLE_IDS)[number];
   bgType: (typeof BG_TYPES)[number]; bg: string; bg2: string; bgImage: string; bgDim: number; bgBlur: number;
   accent: string; accent2: string; text: string; glassTint: string; glassBlur: number; glassOpacity: number; glassBorder: number; radius: number;
   entrance: boolean; hover: boolean;
+  showHeader: boolean; showAvatar: boolean; showBanner: boolean; showName: boolean; showTitle: boolean; showBio: boolean;
+  poweredShow: boolean; poweredPos: "corner" | "footer"; poweredText: string; poweredName: string; poweredUrl: string; poweredLogo: string;
 };
 
 export const defaultSettings: Settings = {
@@ -27,6 +29,8 @@ export const defaultSettings: Settings = {
   bgType: "mesh", bg: "#070910", bg2: "#1b1245", bgImage: "", bgDim: 45, bgBlur: 0,
   accent: "#8ab4ff", accent2: "#c084fc", text: "#f5f7ff", glassTint: "#ffffff", glassBlur: 22, glassOpacity: 8, glassBorder: 16, radius: 22,
   entrance: true, hover: true,
+  showHeader: true, showAvatar: true, showBanner: true, showName: true, showTitle: true, showBio: true,
+  poweredShow: true, poweredPos: "corner", poweredText: "Powered by", poweredName: "Savahphx", poweredUrl: "", poweredLogo: "",
 };
 
 export const STYLES: { id: Settings["style"]; name: string; v: Partial<Settings> }[] = [
@@ -91,7 +95,7 @@ export function normalize(raw: unknown): Settings {
     avatarPos: pick(r.avatarPos, AL, d.avatarPos), avatarGlow: bool(r.avatarGlow, d.avatarGlow),
     titleSize: num(r.titleSize, 14, 56, d.titleSize), bioSize: num(r.bioSize, 11, 24, d.bioSize),
     upper: bool(r.upper, d.upper), font: pick(r.font, FONTS, d.font),
-    socialPos: pick(r.socialPos, ["top", "bottom", "both"], d.socialPos),
+    socialPos: pick(r.socialPos, ["top", "bottom", "both", "off"], d.socialPos),
     socialStyle: r.socialStyle === "plain" ? "plain" : "chip", socialSize: num(r.socialSize, 32, 72, d.socialSize),
     iconShape: pick(r.iconShape, SH, d.iconShape), style: pick(r.style, STYLE_IDS, d.style),
     bgType: pick(r.bgType, BG_TYPES, d.bgType), bg: hex(r.bg, d.bg), bg2: hex(r.bg2, d.bg2),
@@ -100,5 +104,31 @@ export function normalize(raw: unknown): Settings {
     glassTint: hex(r.glassTint, d.glassTint), glassBlur: num(r.glassBlur ?? r.blur, 0, 40, d.glassBlur),
     glassOpacity: num(r.glassOpacity, 0, 80, d.glassOpacity), glassBorder: num(r.glassBorder, 0, 60, d.glassBorder),
     radius: num(r.radius, 0, 40, d.radius), entrance: bool(r.entrance, d.entrance), hover: bool(r.hover, d.hover),
+    showHeader: bool(r.showHeader, true), showAvatar: bool(r.showAvatar, true), showBanner: bool(r.showBanner, true),
+    showName: bool(r.showName, true), showTitle: bool(r.showTitle, true), showBio: bool(r.showBio, true),
+    poweredShow: bool(r.poweredShow, d.poweredShow), poweredPos: r.poweredPos === "footer" ? "footer" : "corner",
+    poweredText: str(r.poweredText, d.poweredText, 40), poweredName: str(r.poweredName, d.poweredName, 40),
+    poweredUrl: img(r.poweredUrl), poweredLogo: img(r.poweredLogo),
   };
 }
+
+export const RESET_GROUPS: { id: string; name: string; keys: (keyof Settings)[] }[] = [
+  { id: "profile", name: "Profile text and photos", keys: ["name", "title", "bio", "avatar", "banner", "font", "titleSize", "bioSize", "showName", "showTitle", "showBio", "showAvatar", "showBanner"] },
+  { id: "header", name: "Header layout", keys: ["header", "align", "avatarShape", "avatarSize", "avatarPos", "avatarGlow", "upper", "showHeader"] },
+  { id: "style", name: "Style and colors", keys: ["style", "accent", "accent2", "text", "glassTint", "glassBlur", "glassOpacity", "glassBorder", "radius"] },
+  { id: "bg", name: "Background", keys: ["bgType", "bg", "bg2", "bgImage", "bgDim", "bgBlur"] },
+  { id: "icons", name: "Icon row", keys: ["socialPos", "socialStyle", "socialSize", "iconShape"] },
+  { id: "motion", name: "Motion", keys: ["entrance", "hover"] },
+  { id: "footer", name: "Footer tag", keys: ["poweredShow", "poweredPos", "poweredText", "poweredName", "poweredUrl", "poweredLogo"] },
+];
+
+export type Layout = { id: string; name: string; at: number; s: Settings; rows?: Row[] };
+
+const D = (o: Partial<Settings>): Settings => ({ ...defaultSettings, ...o });
+export const DEMO_LAYOUTS: Layout[] = [
+  { id: "demo-neon", name: "Neon Night", at: 0, s: D({ style: "mesh", header: "banner", bgType: "mesh", bg: "#0b0420", bg2: "#3b0a5c", accent: "#ff5fa2", accent2: "#38bdf8", text: "#ffffff", radius: 26, font: "space", iconShape: "rounded" }) },
+  { id: "demo-frost", name: "Clean Frost", at: 0, s: D({ style: "flat", header: "classic", bgType: "solid", bg: "#f4f6fb", text: "#111827", accent: "#2563eb", radius: 14, avatarShape: "rounded", font: "inter", avatarGlow: false }) },
+  { id: "demo-clay", name: "Soft Clay", at: 0, s: D({ style: "neu", header: "card", bgType: "solid", bg: "#e6e9ef", text: "#3b4252", accent: "#5b7cfa", radius: 28, font: "dm", avatarGlow: false }) },
+  { id: "demo-poster", name: "Poster Hero", at: 0, s: D({ style: "dark", header: "hero", bgType: "gradient", bg: "#050505", bg2: "#14141c", accent: "#f5d90a", text: "#f4f4f5", radius: 14, font: "playfair" }) },
+  { id: "demo-side", name: "Side Profile", at: 0, s: D({ style: "glass", header: "side", align: "left", avatarPos: "left", avatarShape: "rounded", upper: false, socialPos: "bottom" }) },
+];
