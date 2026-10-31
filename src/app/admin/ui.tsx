@@ -106,32 +106,25 @@ export function OptColor({ label, value, auto, onChange }: { label: string; valu
   );
 }
 
-// Reads the browser's connection hints (Chrome and Android). On a slow link we send a much smaller image.
-function slowLink() {
-  const c = typeof navigator === "undefined" ? undefined : (navigator as unknown as { connection?: { saveData?: boolean; effectiveType?: string; downlink?: number } }).connection;
-  return !!c && (!!c.saveData || ["slow-2g", "2g", "3g"].includes(c.effectiveType ?? "") || (c.downlink !== undefined && c.downlink < 1.5));
-}
-
-// Shrinks photos on the device before upload so even a weak mobile signal can finish.
-async function optimize(f: File, max: number, slow: boolean): Promise<File> {
-  if (f.type === "image/gif" || f.size < 60_000) return f;
+// Shrinks photos on the device before upload: small files get through even on a shaky mobile connection.
+async function optimize(f: File, max: number): Promise<File> {
+  if (f.type === "image/gif" || f.size < 120_000) return f;
   const bmp = await createImageBitmap(f).catch(() => null);
   if (!bmp) return f;
-  const small = max <= 1024;
-  const target = slow ? (small ? 90_000 : 160_000) : small ? 250_000 : 380_000;
-  let sc = Math.min(1, (slow ? max * 0.75 : max) / Math.max(bmp.width, bmp.height));
   let best: Blob | null = null;
-  for (const q of [0.82, 0.7, 0.6, 0.5, 0.42]) {
+  let sc = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  for (let pass = 0; pass < 3; pass++) {
     const c = document.createElement("canvas");
     c.width = Math.max(1, Math.round(bmp.width * sc)); c.height = Math.max(1, Math.round(bmp.height * sc));
     const ctx = c.getContext("2d");
     if (!ctx) break;
     ctx.drawImage(bmp, 0, 0, c.width, c.height);
+    const q = [0.84, 0.72, 0.6][pass];
     const blob: Blob | null = await new Promise((r) => c.toBlob(r, "image/webp", q));
     if (!blob) break;
     if (!best || blob.size < best.size) best = blob;
-    if (blob.size <= target) break;
-    sc *= 0.85;
+    if (blob.size <= 450_000) break;
+    sc *= 0.8;
   }
   bmp.close?.();
   if (!best || best.size >= f.size) return f;
@@ -141,88 +134,81 @@ async function optimize(f: File, max: number, slow: boolean): Promise<File> {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-// Browsers report upload progress as bytes handed to the network stack, so on a slow link the bar reaches 100%
-// long before the data has really arrived. We therefore wait for the server's answer instead of giving up.
-function viaServer(file: File, onPct: (n: number) => void, signal: AbortSignal, timeout: number): Promise<string> {
+// Plan B: send the already-shrunk image through our own server when the direct lane keeps stalling.
+function viaServer(file: File, onPct: (n: number) => void, signal: AbortSignal): Promise<string> {
   return new Promise((res, rej) => {
     const x = new XMLHttpRequest();
     x.open("PUT", `/api/upload?name=${encodeURIComponent(file.name)}`);
     x.setRequestHeader("content-type", file.type);
     x.upload.onprogress = (e) => { if (e.lengthComputable) onPct(Math.round((e.loaded / e.total) * 100)); };
     x.onload = () => {
-      try { const j = JSON.parse(x.responseText); if (x.status < 300 && j.url) res(j.url); else rej(new Error(j.error || `Upload failed (${x.status}).`)); }
-      catch { rej(new Error(`Upload failed (${x.status}).`)); }
+      try { const j = JSON.parse(x.responseText); if (x.status < 300 && j.url) res(j.url); else rej(new Error(j.error || "Upload failed.")); }
+      catch { rej(new Error("Upload failed.")); }
     };
     x.onerror = () => rej(new Error("Network error"));
-    x.ontimeout = () => rej(new Error("timeout"));
+    x.ontimeout = () => rej(new Error("Network error"));
+    x.timeout = 90000;
     x.onabort = () => rej(new DOMException("Aborted", "AbortError"));
-    x.timeout = timeout;
     signal.addEventListener("abort", () => x.abort());
     x.send(file);
   });
 }
 
-type Up = { phase: "idle" | "prep" | "up" | "done" | "err"; pct: number; msg: string; name: string; size: number; t0: number };
-const IDLE: Up = { phase: "idle", pct: 0, msg: "", name: "", size: 0, t0: 0 };
+type Up = { phase: "idle" | "prep" | "up" | "done" | "err"; pct: number; msg: string; name: string; size: number };
+const IDLE: Up = { phase: "idle", pct: 0, msg: "", name: "", size: 0 };
 const fmt = (n: number) => (n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`);
 
 export function ImgField({ label, value, onChange, max = 1800 }: { label: string; value: string; onChange: (v: string) => void; max?: number }) {
   const [up, setUp] = useState<Up>(IDLE);
-  const [, tick] = useState(0);
   const ctl = useRef<AbortController | null>(null);
   const cancelled = useRef(false);
   const last = useRef<File | null>(null);
   const input = useRef<HTMLInputElement>(null);
-  const busy = up.phase === "prep" || up.phase === "up";
-  useEffect(() => { if (!busy) return; const t = setInterval(() => tick((n) => n + 1), 1000); return () => clearInterval(t); }, [busy]);
 
   const run = async (f: File) => {
     last.current = f; cancelled.current = false;
-    setUp({ phase: "prep", pct: 0, msg: "Checking your image", name: f.name, size: f.size, t0: Date.now() });
+    setUp({ phase: "prep", pct: 0, msg: "Checking your image", name: f.name, size: f.size });
     try {
       if (!/^image\/(jpeg|png|webp|gif|avif)$/.test(f.type)) throw new Error("Use a JPG, PNG, WebP, GIF or AVIF image.");
       if (f.size > 10 * 1024 * 1024) throw new Error("That image is over 10 MB.");
-      // Best-effort check. A slow network must never block the upload itself.
-      try {
-        const r = await fetch("/api/upload", { signal: AbortSignal.timeout(20000) });
-        const j = await r.json();
-        if (r.status === 401 || j.error) throw new Error(j.error || "Please sign in again.");
-        if (!j.blob) throw new Error("Image storage is not connected. In Vercel open Storage, create a Blob store, connect it to this project and redeploy.");
-      } catch (e) { if (e instanceof Error && /sign in|not connected/i.test(e.message)) throw e; }
-      const slow = slowLink();
-      setUp((u) => ({ ...u, msg: slow ? "Slow connection detected. Making the image extra small" : "Shrinking it for fast loading" }));
-      const file = await optimize(f, max, slow);
-      const budget = Math.min(600_000, 90_000 + (file.size / 1500) * 1000); // generous, grows with the file size
-      // Only a dropped connection is worth another try. Anything the server says (storage, sign-in, size) is final.
-      const fatal = (e: unknown) => cancelled.current || (e instanceof Error && !/^Network error$/.test(e.message));
-      if (file.size > 4_400_000) throw new Error("That image is still over 4 MB after shrinking. Try a smaller one.");
+      const pre = await fetch("/api/upload", { signal: AbortSignal.timeout(12000) }).then(async (r) => ({ ...(await r.json()) })).catch(() => null);
+      if (!pre) throw new Error("Could not reach the server. Check your connection.");
+      if (pre.error) throw new Error(pre.error);
+      if (!pre.blob) throw new Error("Image storage is not connected. In Vercel open Storage, create a Blob store, connect it to this project and redeploy.");
+      setUp((u) => ({ ...u, msg: "Shrinking it for fast loading" }));
+      const file = await optimize(f, max);
+      const name = file.name.replace(/[^\w.-]/g, "_");
       let url = "";
       let lastErr: unknown;
-      for (let i = 1; i <= 3 && !url; i++) {
+      const guard = (ms: number) => {
         const ctrl = new AbortController();
         ctl.current = ctrl;
-        setUp({ phase: "up", pct: 0, msg: i > 1 ? `Connection dropped, trying again (${i}/3)` : "Uploading", name: file.name, size: file.size, t0: Date.now() });
-        try { url = await viaServer(file, (n) => setUp((v) => ({ ...v, pct: Math.min(99, n) })), ctrl.signal, budget); }
-        catch (e) { lastErr = e; if (fatal(e)) break; await sleep(800 * i); }
+        let seen = Date.now();
+        const watch = setInterval(() => { if (Date.now() - seen > ms) ctrl.abort(); }, 1000);
+        return { ctrl, poke: () => { seen = Date.now(); }, stop: () => clearInterval(watch) };
+      };
+      const fatal = (e: unknown) => cancelled.current || (e instanceof Error && !/^Network error$|abort/i.test(e.name + e.message));
+      // Main lane: through our own server (small, simple, no handshake). Three tries, a stall just starts the next one.
+      if (file.size > 4_400_000) throw new Error("That image is still over 4 MB after shrinking. Try a smaller one.");
+      {
+        for (let i = 1; i <= 3 && !url; i++) {
+          const g = guard(30000);
+          setUp({ phase: "up", pct: 0, msg: i > 1 ? `Connection hiccup, retrying (${i}/3)` : "Uploading", name: file.name, size: file.size });
+          try { url = await viaServer(file, (n) => { g.poke(); setUp((u) => ({ ...u, pct: Math.min(99, n), msg: n >= 100 ? "Saving to storage" : "Uploading" })); }, g.ctrl.signal); }
+          catch (e) { lastErr = e; if (fatal(e)) throw e; await sleep(600 * i); }
+          finally { g.stop(); }
+        }
       }
-      if (!url) {
-        if (cancelled.current) throw new Error("Upload cancelled.");
-        const m = lastErr instanceof Error ? lastErr.message : "";
-        throw new Error(/timeout/i.test(m) ? "The connection is too slow to finish. Try again with a steadier signal or a smaller image." : m === "Network error" ? "Could not reach the server. Check your connection and try again." : m && !/abort/i.test(m) ? m : "The upload could not finish. Try again.");
-      }
+      if (!url) throw lastErr instanceof Error && !/abort/i.test(lastErr.name + lastErr.message) ? lastErr : new Error("The connection kept stalling. Try again on a steadier signal.");
       onChange(url);
-      setUp({ phase: "done", pct: 100, msg: "Uploaded", name: file.name, size: file.size, t0: 0 });
+      setUp({ phase: "done", pct: 100, msg: "Uploaded", name: file.name, size: file.size });
       setTimeout(() => setUp((u) => (u.phase === "done" ? IDLE : u)), 2800);
     } catch (e) {
-      setUp({ phase: "err", pct: 0, msg: e instanceof Error ? e.message : "Upload failed.", name: f.name, size: f.size, t0: 0 });
+      const stopped = e instanceof Error && /abort/i.test(e.name + e.message);
+      setUp({ phase: "err", pct: 0, msg: cancelled.current ? "Upload cancelled." : stopped ? "The connection kept stalling. Try again on a steadier signal." : e instanceof Error ? e.message : "Upload failed.", name: f.name, size: f.size });
     } finally { if (input.current) input.current.value = ""; }
   };
-
-  const secs = up.t0 ? Math.round((Date.now() - up.t0) / 1000) : 0;
-  const waiting = up.phase === "up" && up.pct >= 99;
-  const eta = up.phase === "up" && up.pct >= 4 && up.pct < 99 && secs > 3 ? Math.max(1, Math.round((secs / up.pct) * (100 - up.pct))) : 0;
-  const title = waiting ? "Sent. Saving to storage" : `${up.msg}${up.phase === "up" ? ` ${up.pct}%` : ""}`;
-  const note = waiting ? (secs > 15 ? `${secs}s so far. Slow signals can take a minute, please keep this open.` : "Almost done") : eta ? `about ${eta}s left` : "";
+  const busy = up.phase === "prep" || up.phase === "up";
 
   return (
     <Field label={label} error={httpsErr(value)} hint="JPG, PNG, WebP, GIF or AVIF up to 10 MB">
@@ -239,11 +225,11 @@ export function ImgField({ label, value, onChange, max = 1800 }: { label: string
         <div className={`upl ${up.phase}`} role="status" aria-live="polite">
           <div className="ut">
             <span className="us">{up.phase === "done" ? <Gl n="check" s={16} /> : up.phase === "err" ? <Gl n="x" s={16} /> : <i className="spin" />}</span>
-            <span className="um"><b>{title}</b><small>{note || `${up.name} · ${fmt(up.size)}`}</small></span>
+            <span className="um"><b>{up.msg}{up.phase === "up" ? ` ${up.pct}%` : ""}</b><small>{up.name} · {fmt(up.size)}</small></span>
             {busy && <button type="button" className="btn sm" onClick={() => { cancelled.current = true; ctl.current?.abort(); }}>Cancel</button>}
             {up.phase === "err" && <button type="button" className="btn sm" onClick={() => last.current && run(last.current)}>Try again</button>}
           </div>
-          <div className="pb"><i className={up.phase === "prep" || waiting ? "ind" : ""} style={{ width: up.phase === "prep" || waiting ? "100%" : `${up.pct}%` }} /></div>
+          <div className="pb"><i className={up.phase === "prep" ? "ind" : ""} style={{ width: up.phase === "prep" ? "100%" : `${up.pct}%` }} /></div>
         </div>
       )}
     </Field>
