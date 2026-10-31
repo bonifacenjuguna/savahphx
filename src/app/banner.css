@@ -1,4 +1,0 @@
-/* v3.5: an uploaded banner shows in every layout, edge to edge */
-.pg .hd-classic.hasbn{padding-top:0}
-.pg .hd-classic .bn{margin:0 -16px 16px;height:clamp(140px,34vw,220px)}
-.pg .bn img{object-fit:cover;width:100%;height:100%}

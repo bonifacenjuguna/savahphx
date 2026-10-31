@@ -1,8 +1,8 @@
-import "@/app/banner.css";
 import { byId, svgUri } from "@/lib/platforms";
 import { effSizes, emptyRow, logoUrl, type Row, type Settings } from "@/lib/theme";
 import CardMenu from "./CardMenu";
 import { NoteCard, WalletCard } from "./Cards";
+import { LogoImg, LogoMask } from "./Logo";
 import ZoomImg from "./Zoom";
 
 const J = { left: "start", center: "center", right: "end" } as const;
@@ -35,7 +35,7 @@ export function cssVars(t: Settings) {
     "--av": `${t.avatarSize}px`, "--avr": AVR[t.avatarShape], "--aj": J[t.avatarPos], "--al": t.align, "--jc": JC[t.align],
     "--ts": `${t.titleSize}px`, "--bs": `${t.bioSize}px`, "--up": t.upper ? "uppercase" : "none", "--soc": `${t.socialSize}px`,
     "--dim": t.bgType === "image" ? t.bgDim / 100 : 0, "--speed": t.speed, "--stg": `${t.stagger}ms`,
-    "--gap": `${d.gap}px`, "--hg": `${d.hg}px`, "--pt": `${d.pt}px`, "--ha": `${d.ha}px`, "--cp": `${d.cp}px`,
+    "--bnh": `${t.bannerH}px`, "--bfit": t.bannerFit === "stretch" ? "fill" : "cover", "--gap": `${d.gap}px`, "--hg": `${d.hg}px`, "--pt": `${d.pt}px`, "--ha": `${d.ha}px`, "--cp": `${d.cp}px`,
   } as React.CSSProperties;
 }
 
@@ -44,12 +44,11 @@ export function Ico({ r, ink, className }: { r: Row; ink: string; className?: st
   const p = byId(r.platform);
   const slug = r.icon || p?.slug || "";
   const col = r.color ? p?.color ?? "#ffffff" : "#" + ink;
-  if (r.image) return <img className={className} src={r.image} alt="" />;
-  if (!r.icon && p?.svg) return <img className={className} src={svgUri(p.svg, col)} alt="" />;
+  if (r.image) return <LogoImg className={className} src={r.image} />;
+  if (!r.icon && p?.svg) return <LogoImg className={className} src={svgUri(p.svg, col)} />;
   if (!slug) return null;
-  if (!r.icon && p?.legacy)
-    return <span className={`mk ${className ?? ""}`} style={{ "--m": `url(https://cdn.jsdelivr.net/npm/simple-icons@12/icons/${slug}.svg)`, background: col } as React.CSSProperties} />;
-  return <img className={className} src={logoUrl(slug, r.color ? undefined : ink)} alt="" />;
+  if (!r.icon && p?.legacy) return <LogoMask className={className} url={`https://cdn.jsdelivr.net/npm/simple-icons@12/icons/${slug}.svg`} color={col} />;
+  return <LogoImg className={className} src={logoUrl(slug, r.color ? undefined : ink)} />;
 }
 
 export function CardIcon({ r, t }: { r: Row; t: Settings }) {
@@ -102,10 +101,10 @@ export default function Page({ rows, t, embedded }: { rows: Row[]; t: Settings; 
   const nav = (bottom = false) =>
     icons.length ? <nav className={`socials${bottom ? " bot" : ""}`}>{icons.map((s) => <Chip key={s.key} s={s} t={t} />)}</nav> : null;
 
-  const L = t.header;
+  // A banner you uploaded is never ignored: Classic switches to the Banner look when one is set.
+  const L = t.header === "classic" && t.banner && t.showBanner ? "banner" : t.header;
   const showAv = t.showAvatar && L !== "hero";
-  // An uploaded banner always shows, whatever the layout (Classic gets a full-width strip on top).
-  const showBn = t.showBanner && (L !== "classic" || !!t.banner);
+  const showBn = t.showBanner && L !== "classic";
   const bn = t.banner || (L === "hero" ? t.avatar : "");
   const hasText = (t.showName && !!t.name) || (t.showTitle && !!t.title) || (t.showBio && !!t.bio);
   const showHd = t.showHeader && (showBn || showAv || hasText);
@@ -121,8 +120,8 @@ export default function Page({ rows, t, embedded }: { rows: Row[]; t: Settings; 
       </div>
       <main className={`wrap${showHd ? "" : " pt"}`}>
         {showHd ? (
-          <header className={`hd hd-${L}${showAv ? "" : " noav"}${L === "classic" && showBn ? " hasbn" : ""}`}>
-            {showBn && <div className="bn">{bn && <ZoomImg src={bn} />}</div>}
+          <header className={`hd hd-${L}${showAv ? "" : " noav"}`}>
+            {showBn && <div className={`bn${t.bannerFade ? "" : " nf"}`}>{bn && <ZoomImg src={bn} />}</div>}
             <div className="sr">
               {showAv && (t.avatar ? <ZoomImg className="av" src={t.avatar} /> : <div className="av" />)}
               {hasText && (

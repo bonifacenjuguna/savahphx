@@ -5,13 +5,14 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type D
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Page, { CardIcon, Chip, Ico, Mini, Powered } from "@/components/Page";
-import { NETS, netById, shortAddr, walletWarn } from "@/lib/crypto";
+import { NETS, NET_GROUPS, netById, shortAddr, walletWarn } from "@/lib/crypto";
 import { GROUPS, PLATFORMS, byId, resolveUrl, toHandle, type Platform } from "@/lib/platforms";
 import { cleanRow } from "@/lib/rows";
 import {
   AVATAR_MOTIONS, BG_MOTIONS, BG_TYPES, CONTENT_KEYS, DEMO_LAYOUTS, DENSITIES, ENTRANCES, FONTS, HOVERS, LAYOUTS, PRESETS, RESET_GROUPS, STYLES,
   defaultSettings, emptyRow, normalize, type Layout, type Row, type Settings,
 } from "@/lib/theme";
+import { settingGroup, settingLabel } from "@/lib/theme";
 import { logout, saveAll, saveLayouts } from "./actions";
 import { StatsSheet, StatsSummary } from "./stats";
 import { Color, Field, Gl, ImgField, OptColor, Range, Seg, Sheet, Switch, Tgl, httpsErr } from "./ui";
@@ -80,14 +81,25 @@ function Picker({ title = "Choose a platform", onPick, onClose }: { title?: stri
 }
 
 function NetPicker({ value, onPick, onClose }: { value: string; onPick: (id: string) => void; onClose: () => void }) {
+  const [q, setQ] = useState("");
+  const list = NETS.filter((n) => `${n.name} ${n.tick}`.toLowerCase().includes(q.toLowerCase().trim()));
   return (
     <Sheet title="Choose a network" onClose={onClose}>
+      <input className="in" placeholder="Search coins and networks" value={q} onChange={(e) => setQ(e.target.value)} />
       <p className="mut">Pick the exact network. Sending on the wrong one can lose funds.</p>
-      {NETS.map((n) => (
-        <button type="button" key={n.id} className={"pk wide" + (value === n.id ? " on" : "")} onClick={() => onPick(n.id)}>
-          <span className="th"><NetLogo net={n} /></span><span>{n.name}</span>
-        </button>
-      ))}
+      {NET_GROUPS.map((g) => {
+        const items = list.filter((n) => (n.g ?? "Other") === g);
+        return items.length ? (
+          <section key={g}><h3 className="gh">{g}</h3>
+            {items.map((n) => (
+              <button type="button" key={n.id} className={"pk wide" + (value === n.id ? " on" : "")} onClick={() => onPick(n.id)}>
+                <span className="th"><NetLogo net={n} /></span><span>{n.name}</span>
+              </button>
+            ))}
+          </section>
+        ) : null;
+      })}
+      {!list.length && <p className="mut">No match. Choose "Other network" to use any coin.</p>}
     </Sheet>
   );
 }
@@ -251,6 +263,8 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
   const [pv, setPv] = useState(false);
   const [tried, setTried] = useState(false);
   const [toast, setToast] = useState("");
+  const [toastOk, setToastOk] = useState(false);
+  const [review, setReview] = useState(false);
   const [busy, start] = useTransition();
   const [layouts, setLayouts] = useState(initialLayouts);
   const [lname, setLname] = useState("");
@@ -259,7 +273,7 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
   const [prefs, setPrefs] = useState({ accent: "#8ab4ff", compact: false });
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const say = (m: string) => { setToast(m); clearTimeout(timer.current); timer.current = setTimeout(() => setToast(""), 3400); };
+  const say = (m: string, ok = false) => { setToast(m); setToastOk(ok); clearTimeout(timer.current); timer.current = setTimeout(() => setToast(""), ok ? 2600 : 3400); };
   useEffect(() => {
     try {
       const v = JSON.parse(localStorage.getItem("adm-prefs") || "{}");
@@ -318,10 +332,40 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
       return;
     }
     start(async () => {
-      try { await saveAll({ rows, settings: s }); setBase(snap); setTried(false); say("Saved. Your site is updated."); }
+      try { await saveAll({ rows, settings: s }); setBase(snap); setTried(false); say("Saved. Your site is live with your changes.", true); }
       catch { say("Could not save. Check your connection and try again."); }
     });
   };
+  const fmtVal = (v: unknown) => (typeof v === "boolean" ? (v ? "On" : "Off") : v === "" || v == null ? "None" : String(v).length > 30 ? String(v).slice(0, 28) + "..." : String(v));
+  const isHex = (v: unknown) => typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v);
+  const ROW_FIELDS: [keyof Row, string][] = [["title", "Title"], ["size", "Card size"], ["visible", "Shown on page"], ["asIcon", "In icon row"], ["color", "Colored logo"], ["shape", "Logo shape"], ["image", "Custom image"], ["body", "Text or address"], ["network", "Network"], ["memo", "Memo"], ["qr", "QR code"]];
+  type Change = { id: string; group: string; label: string; from?: string; to?: string; fromC?: string; toC?: string; undo: () => void };
+  const computeChanges = (): Change[] => {
+    const b = JSON.parse(base) as { rows: Row[]; s: Settings };
+    const out: Change[] = [];
+    const bm = new Map(b.rows.map((r, i) => [r.key, { r, i }]));
+    const cm = new Map(rows.map((r) => [r.key, r]));
+    for (const r of rows) {
+      const o = bm.get(r.key);
+      if (!o) { out.push({ id: "add-" + r.key, group: "Links", label: `Added "${r.title || "Untitled"}"`, undo: () => setRows((x) => x.filter((y) => y.key !== r.key)) }); continue; }
+      const o0 = o.r, g = `Card: ${o0.title || "Untitled"}`;
+      if (r.url !== o0.url || r.platform !== o0.platform || r.handle !== o0.handle || r.icon !== o0.icon)
+        out.push({ id: r.key + "-link", group: g, label: "Platform or link", from: fmtVal(o0.url || o0.platform), to: fmtVal(r.url || r.platform), undo: () => setRows((x) => x.map((y) => (y.key === r.key ? { ...y, url: o0.url, platform: o0.platform, handle: o0.handle, icon: o0.icon } : y))) });
+      for (const [k, label] of ROW_FIELDS) if (r[k] !== o0[k])
+        out.push({ id: `${r.key}-${k}`, group: g, label, from: fmtVal(o0[k]), to: fmtVal(r[k]), undo: () => setRows((x) => x.map((y) => (y.key === r.key ? ({ ...y, [k]: o0[k] } as Row) : y))) });
+    }
+    for (const [key, o] of bm) if (!cm.has(key))
+      out.push({ id: "del-" + key, group: "Links", label: `Removed "${o.r.title || "Untitled"}"`, undo: () => setRows((x) => { const c = [...x]; c.splice(Math.min(o.i, c.length), 0, o.r); return c; }) });
+    const was = b.rows.filter((r) => cm.has(r.key)).map((r) => r.key).join();
+    const now = rows.filter((r) => bm.has(r.key)).map((r) => r.key).join();
+    if (was !== now) out.push({ id: "order", group: "Links", label: "Order of your cards", from: "Reordered", undo: () => setRows((x) => [...x].sort((p, q) => (bm.get(p.key)?.i ?? 1e6) - (bm.get(q.key)?.i ?? 1e6))) });
+    for (const k of Object.keys(s) as (keyof Settings)[]) if (JSON.stringify(s[k]) !== JSON.stringify(b.s[k]))
+      out.push({ id: "s-" + k, group: settingGroup(k), label: settingLabel(k), from: fmtVal(b.s[k]), to: fmtVal(s[k]), fromC: isHex(b.s[k]) ? String(b.s[k]) : undefined, toC: isHex(s[k]) ? String(s[k]) : undefined, undo: () => setS((p) => ({ ...p, [k]: b.s[k] }) as Settings) });
+    return out;
+  };
+  const changes = dirty ? computeChanges() : [];
+  const grouped = changes.reduce<Record<string, Change[]>>((a, c) => { (a[c.group] ||= []).push(c); return a; }, {});
+  useEffect(() => { if (review && !dirty) setReview(false); }, [review, dirty]);
   const discard = () => { const b = JSON.parse(base); setRows(b.rows); setS(b.s); setTried(false); setLinkKey(null); };
 
   const doReset = (ids: string[]) => {
@@ -410,7 +454,7 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
           </form>
         </div>
         <div className="qs">
-          <span className={"pill" + (dirty ? " warn" : "")}><i className="dot" />{dirty ? "Unsaved changes" : "All changes saved"}</span>
+          {dirty && <button type="button" className="pill warn btnp" onClick={() => setReview(true)}><i className="dot" />{changes.length} {changes.length === 1 ? "change" : "changes"} to review<Gl n="chev" s={14} /></button>}
           <span className="chipm"><b>{rows.filter((r) => r.visible).length}</b> live link{rows.filter((r) => r.visible).length === 1 ? "" : "s"}</span>
           <span className="chipm"><b>{rows.filter((r) => r.type === "link" && r.asIcon).length}</b> in icon row</span>
         </div>
@@ -444,13 +488,36 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
 
       {dirty && (
         <div className="savebar">
-          <button type="button" className="btn" onClick={discard}>Discard</button>
+          <button type="button" className="btn" onClick={discard}>Discard all</button>
           <span className="sp" />
           <button type="button" className="btn onlym" onClick={() => setPv(true)}>Preview</button>
           <button type="button" className="btn pri" disabled={busy} onClick={save}>{busy ? "Saving..." : "Save changes"}</button>
         </div>
       )}
-      {toast && <div className="toast" role="status">{toast}</div>}
+      {toast && <div className={"toast" + (toastOk ? " ok" : "")} role="status">{toastOk && <span className="tick"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></span>}{toast}</div>}
+
+      {review && (
+        <Sheet title={`${changes.length} pending ${changes.length === 1 ? "change" : "changes"}`} onClose={() => setReview(false)}>
+          <p className="mut">Everything below is not saved yet. Discard what you do not want, one change at a time.</p>
+          {Object.entries(grouped).map(([g, items]) => (
+            <section key={g} className="cg">
+              <div className="cgh"><b>{g}</b>{items.length > 1 && <button type="button" className="lnk" onClick={() => items.forEach((c) => c.undo())}>Discard all here</button>}</div>
+              {items.map((c) => (
+                <div className="cl2" key={c.id}>
+                  <span className="ct"><b>{c.label}</b>{(c.from !== undefined || c.to) && (
+                    <small>{c.fromC && <i className="sw" style={{ background: c.fromC }} />}{c.from}{c.to ? " to " : ""}{c.toC && <i className="sw" style={{ background: c.toC }} />}{c.to}</small>
+                  )}</span>
+                  <button type="button" className="btn sm" onClick={c.undo}>Discard</button>
+                </div>
+              ))}
+            </section>
+          ))}
+          <div className="acts2">
+            <button type="button" className="btn danger" onClick={() => { discard(); setReview(false); }}>Discard all</button>
+            <button type="button" className="btn pri" onClick={() => { setReview(false); save(); }}>Save changes</button>
+          </div>
+        </Sheet>
+      )}
 
       {panel === "stats" && <StatsSheet onClose={close} say={say} />}
 
@@ -481,7 +548,10 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
         <Sheet title="Header" onClose={close} dense>
           <Switch on={s.showHeader} onChange={(v) => set("showHeader", v)} label="Show header" hint="Turn off to start straight with your links" />
           <Mini t={s} className="hdpv">{s.avatar ? <img className="av" src={s.avatar} alt="" /> : <div className="av" />}</Mini>
-          <Field label="Layout" hint="Banner, Side and Card use your banner image. Hero uses it as the full header."><Seg value={s.header} onChange={(v) => set("header", v)} options={LAYOUTS} /></Field>
+          <Field label="Layout" hint="Your banner image always shows. Classic switches to the Banner look when you upload one."><Seg value={s.header} onChange={(v) => set("header", v)} options={LAYOUTS} /></Field>
+          <Field label="Banner fit" hint="Fill crops the picture to cover the whole banner. Stretch squeezes the full picture to fit exactly."><Seg value={s.bannerFit} onChange={(v) => set("bannerFit", v)} options={[{ v: "cover", l: "Fill" }, { v: "stretch", l: "Stretch" }]} /></Field>
+          <Range label="Banner height" value={s.bannerH} min={100} max={380} unit="px" onChange={(v) => set("bannerH", v)} />
+          <Switch on={s.bannerFade} onChange={(v) => set("bannerFade", v)} label="Fade banner into the page" />
           <Field label="Spacing" hint="How close everything sits together"><Seg value={s.density} onChange={(v) => set("density", v)} options={DENSITIES} /></Field>
           <Field label="Text alignment"><Seg value={s.align} onChange={(v) => set("align", v)} options={["left", "center", "right"] as const} /></Field>
           <Field label="Photo position"><Seg value={s.avatarPos} onChange={(v) => set("avatarPos", v)} options={["left", "center", "right"] as const} /></Field>

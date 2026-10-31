@@ -11,7 +11,7 @@ const AL = ["left", "center", "right"] as const;
 const SH = ["circle", "rounded", "square"] as const;
 
 export type Settings = {
-  name: string; title: string; bio: string; avatar: string; banner: string;
+  name: string; title: string; bio: string; avatar: string; banner: string; bannerFit: "cover" | "stretch"; bannerH: number; bannerFade: boolean;
   header: (typeof LAYOUTS)[number]; align: (typeof AL)[number];
   avatarShape: (typeof SH)[number]; avatarSize: number; avatarPos: (typeof AL)[number]; avatarGlow: boolean;
   titleSize: number; bioSize: number; upper: boolean; font: (typeof FONTS)[number]; density: (typeof DENSITIES)[number];
@@ -29,7 +29,7 @@ export type Settings = {
 };
 
 export const defaultSettings: Settings = {
-  name: "John Doe", title: "Creator and Developer", bio: "@johndoe", avatar: "", banner: "",
+  name: "John Doe", title: "Creator and Developer", bio: "@johndoe", avatar: "", banner: "", bannerFit: "cover", bannerH: 200, bannerFade: true,
   header: "classic", align: "center",
   avatarShape: "circle", avatarSize: 112, avatarPos: "center", avatarGlow: true,
   titleSize: 26, bioSize: 15, upper: false, font: "sora", density: "cozy",
@@ -107,6 +107,7 @@ export function normalize(raw: unknown): Settings {
     name: r.title === undefined ? d.name : str(r.name, d.name, 60),
     title: str(r.title ?? r.name, d.title, 80), bio: str(r.bio ?? r.uid, d.bio, 300),
     avatar: img(r.avatar), banner: img(r.banner),
+    bannerFit: r.bannerFit === "stretch" ? "stretch" : "cover", bannerH: num(r.bannerH, 100, 380, d.bannerH), bannerFade: bool(r.bannerFade, d.bannerFade),
     header: pick(r.header, LAYOUTS, d.header), align: pick(r.align, AL, d.align),
     avatarShape: pick(r.avatarShape, SH, d.avatarShape), avatarSize: num(r.avatarSize, 64, 200, d.avatarSize),
     avatarPos: pick(r.avatarPos, AL, d.avatarPos), avatarGlow: bool(r.avatarGlow, d.avatarGlow),
@@ -140,7 +141,7 @@ export function normalize(raw: unknown): Settings {
 export const RESET_GROUPS: { id: string; name: string; content?: boolean; keys: (keyof Settings)[] }[] = [
   { id: "profile", name: "Name, bio and photos", content: true, keys: ["name", "title", "bio", "avatar", "banner"] },
   { id: "text", name: "Text look and visibility", keys: ["font", "titleSize", "bioSize", "upper", "showName", "showTitle", "showBio", "showAvatar", "showBanner", "nameColor", "titleColor", "bioColor"] },
-  { id: "header", name: "Header layout", keys: ["header", "align", "avatarShape", "avatarSize", "avatarPos", "avatarGlow", "showHeader", "density"] },
+  { id: "header", name: "Header layout", keys: ["header", "align", "avatarShape", "avatarSize", "avatarPos", "avatarGlow", "showHeader", "density", "bannerFit", "bannerH", "bannerFade"] },
   { id: "style", name: "Style and colors", keys: ["style", "accent", "accent2", "text", "glassTint", "glassBlur", "glassOpacity", "glassBorder", "radius", "cardColor", "iconColor"] },
   { id: "bg", name: "Background", keys: ["bgType", "bg", "bg2", "bgImage", "bgDim", "bgBlur"] },
   { id: "icons", name: "Icon row", keys: ["socialPos", "socialStyle", "socialSize", "iconShape"] },
@@ -158,3 +159,13 @@ export const DEMO_LAYOUTS: Layout[] = [
   { id: "demo-poster", name: "Poster Hero", at: 0, s: D({ style: "dark", header: "hero", bgType: "gradient", bg: "#050505", bg2: "#14141c", accent: "#f5d90a", text: "#f4f4f5", radius: 14, font: "playfair", entranceStyle: "blur", hoverStyle: "shine", bgMotion: "aurora" }) },
   { id: "demo-side", name: "Side Profile", at: 0, s: D({ style: "glass", header: "side", align: "left", avatarPos: "left", avatarShape: "rounded", upper: false, socialPos: "bottom", entranceStyle: "slide", hoverStyle: "tilt", avatarMotion: "float" }) },
 ];
+
+const NAMES: Partial<Record<keyof Settings, string>> = {
+  title: "Bio", bio: "Extra lines", bg: "Background", bg2: "Second background", accent2: "Second accent", text: "Text color",
+  entrance: "Entrance animation", hover: "Hover effect", socialPos: "Icon row placement", poweredUrl: "Footer link", poweredPos: "Footer style",
+  poweredSide: "Footer edge", poweredAlign: "Footer alignment", poweredShow: "Footer tag", avatar: "Profile photo", banner: "Banner image",
+  bgImage: "Background image", glassTint: "Surface tint", upper: "Uppercase bio", density: "Spacing", header: "Header layout", iconShape: "Icon shape",
+  bannerFit: "Banner fit", bannerH: "Banner height", bannerFade: "Banner fade", speed: "Animation speed", stagger: "Delay between cards",
+};
+export const settingLabel = (k: keyof Settings) => NAMES[k] ?? k.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
+export const settingGroup = (k: keyof Settings) => RESET_GROUPS.find((g) => g.keys.includes(k))?.name ?? "Other";

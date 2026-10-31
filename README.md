@@ -23,5 +23,7 @@ v3.2 adds text and crypto wallet cards (the `qrcode` package makes the QR codes,
 - **Dashboard header:** greeting with your photo and domain, quick buttons (copy link, view site, sign out), live save status and link counts.
 
 ## v3.5
-- **Uploads, the real cause:** the connected Blob store was created as *private*, and the app asked it to store *public* files, so every upload was refused. The upload route now works with private stores (visitors get the image through `/api/img`) and still works with public stores. `@vercel/blob` upgraded to 2.3+.
-- **Banner:** an uploaded banner now shows in every layout (Classic included) instead of being silently ignored, and fills the banner area edge to edge.
+- **Uploads on slow connections:** browsers show 100% as soon as the data is handed to the phone's network stack, so on a weak signal the bar sat at 99% while the file was still travelling, and the old stall timer cancelled and restarted it every time. Uploads now wait for the server's answer (with a live timer), shrink images much further when the connection is slow, and only retry on real network errors.
+- **Banner:** an uploaded banner is always shown (Classic switches to the Banner look), stretches across the full width, and has Fill/Stretch, height and fade controls.
+- **Logos:** CodePen fixed. Every logo now falls back to a link glyph instead of vanishing. About 70 more platforms and 45 crypto networks (searchable, grouped).
+- **Dashboard:** no permanent "All changes saved" pill. A one-time confirmation appears when you save. Unsaved edits show as "N changes to review", opening a list where you can discard changes one by one or per card. Header chips stay in one row.

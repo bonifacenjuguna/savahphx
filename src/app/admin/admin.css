@@ -235,3 +235,20 @@ button.cw{width:100%;text-align:left}
 .qs .pill{display:inline-flex;align-items:center;gap:7px}.qs .pill .dot{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}.qs .pill.warn .dot{animation:pulse 1.2s ease-in-out infinite}
 .chipm{font-size:.78rem;padding:4px 10px;border-radius:99px;background:#141a26;border:1px solid #28324a;color:#aab4c8}.chipm b{color:#eef1f8}
 @media(min-width:1000px){.pv{top:96px}}
+
+/* v3.5 */
+.qs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-right:-14px;padding-right:14px}
+.qs::-webkit-scrollbar{display:none}.qs>*{flex:none;white-space:nowrap}
+.qs .pill{padding:4px 11px;font-size:.78rem}
+.pill.btnp{border:1px solid #6b4a14;font:inherit;font-size:.78rem;cursor:pointer;color:#ffc46b;transition:background .15s,transform .15s}
+.pill.btnp:hover{background:#4a3513;transform:translateY(-1px)}
+.toast.ok{display:flex;align-items:center;gap:10px;background:#0f2418;border-color:#1f6b3c;color:#c9f5d9;animation:up .25s}
+.tick{width:24px;height:24px;flex:none;border-radius:50%;background:#1f6b3c;color:#8df0b0;display:grid;place-items:center;animation:pop .4s}
+.tick path{stroke-dasharray:26;stroke-dashoffset:26;animation:draw .45s .1s forwards}
+.cg{display:grid;gap:4px;padding:12px;border-radius:16px;background:var(--in);border:1px solid #28324a;animation:up .2s}
+.cgh{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:2px}
+.lnk{background:none;border:0;color:var(--ac);font:inherit;font-size:.85rem;cursor:pointer}
+.cl2{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #1f2736;animation:up .2s}
+.ct{flex:1;min-width:0;display:grid;gap:3px}
+.ct small{color:#8b95aa;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.sw{display:inline-block;width:12px;height:12px;border-radius:50%;border:1px solid #ffffff44}
