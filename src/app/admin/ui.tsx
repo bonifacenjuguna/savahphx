@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { upload } from "@vercel/blob/client";
 
 export const httpsErr = (v: string) => (v && !/^https:\/\//i.test(v) ? "Must start with https://" : undefined);
 
@@ -194,36 +193,22 @@ export function ImgField({ label, value, onChange, max = 1800 }: { label: string
       setUp((u) => ({ ...u, msg: slow ? "Slow connection detected. Making the image extra small" : "Shrinking it for fast loading" }));
       const file = await optimize(f, max, slow);
       const budget = Math.min(600_000, 90_000 + (file.size / 1500) * 1000); // generous, grows with the file size
-      const fatal = (e: unknown) => cancelled.current || (e instanceof Error && /unauthor|sign in|not connected|too big|Use a JPG|timeout/i.test(e.message));
+      // Only a dropped connection is worth another try. Anything the server says (storage, sign-in, size) is final.
+      const fatal = (e: unknown) => cancelled.current || (e instanceof Error && !/^Network error$/.test(e.message));
+      if (file.size > 4_400_000) throw new Error("That image is still over 4 MB after shrinking. Try a smaller one.");
       let url = "";
       let lastErr: unknown;
-      if (file.size <= 4_400_000) {
-        for (let i = 1; i <= 3 && !url; i++) {
-          const ctrl = new AbortController();
-          ctl.current = ctrl;
-          setUp({ phase: "up", pct: 0, msg: i > 1 ? `Connection dropped, trying again (${i}/3)` : "Uploading", name: file.name, size: file.size, t0: Date.now() });
-          try { url = await viaServer(file, (n) => setUp((u) => ({ ...u, pct: Math.min(99, n) })), ctrl.signal, budget); }
-          catch (e) { lastErr = e; if (fatal(e)) break; await sleep(800 * i); }
-        }
-      }
-      if (!url && !cancelled.current && !(lastErr instanceof Error && /timeout|unauthor|sign in|not connected/i.test(lastErr.message))) {
+      for (let i = 1; i <= 3 && !url; i++) {
         const ctrl = new AbortController();
         ctl.current = ctrl;
-        let seen = Date.now();
-        const watch = setInterval(() => { if (Date.now() - seen > 120000) ctrl.abort(); }, 2000);
-        setUp({ phase: "up", pct: 0, msg: "Trying the direct lane", name: file.name, size: file.size, t0: Date.now() });
-        try {
-          const b = await upload(`img/${file.name.replace(/[^\w.-]/g, "_")}`, file, {
-            access: "public", handleUploadUrl: "/api/upload", abortSignal: ctrl.signal, multipart: file.size > 3_000_000,
-            onUploadProgress: (p) => { seen = Date.now(); setUp((u) => ({ ...u, pct: Math.min(99, Math.round(p.percentage)) })); },
-          });
-          url = b.url;
-        } catch (e) { lastErr = e; } finally { clearInterval(watch); }
+        setUp({ phase: "up", pct: 0, msg: i > 1 ? `Connection dropped, trying again (${i}/3)` : "Uploading", name: file.name, size: file.size, t0: Date.now() });
+        try { url = await viaServer(file, (n) => setUp((v) => ({ ...v, pct: Math.min(99, n) })), ctrl.signal, budget); }
+        catch (e) { lastErr = e; if (fatal(e)) break; await sleep(800 * i); }
       }
       if (!url) {
         if (cancelled.current) throw new Error("Upload cancelled.");
         const m = lastErr instanceof Error ? lastErr.message : "";
-        throw new Error(/timeout/i.test(m) ? "The connection is too slow to finish. Try again with a steadier signal or a smaller image." : m && !/abort/i.test(m) ? m : "The upload could not finish. Try again.");
+        throw new Error(/timeout/i.test(m) ? "The connection is too slow to finish. Try again with a steadier signal or a smaller image." : m === "Network error" ? "Could not reach the server. Check your connection and try again." : m && !/abort/i.test(m) ? m : "The upload could not finish. Try again.");
       }
       onChange(url);
       setUp({ phase: "done", pct: 100, msg: "Uploaded", name: file.name, size: file.size, t0: 0 });
@@ -236,8 +221,8 @@ export function ImgField({ label, value, onChange, max = 1800 }: { label: string
   const secs = up.t0 ? Math.round((Date.now() - up.t0) / 1000) : 0;
   const waiting = up.phase === "up" && up.pct >= 99;
   const eta = up.phase === "up" && up.pct >= 4 && up.pct < 99 && secs > 3 ? Math.max(1, Math.round((secs / up.pct) * (100 - up.pct))) : 0;
-  const title = waiting ? "Sent. Finishing on your connection" : `${up.msg}${up.phase === "up" ? ` ${up.pct}%` : ""}`;
-  const note = waiting ? `${secs}s so far. Slow signals can take a minute, please keep this open.` : eta ? `about ${eta}s left` : "";
+  const title = waiting ? "Sent. Saving to storage" : `${up.msg}${up.phase === "up" ? ` ${up.pct}%` : ""}`;
+  const note = waiting ? (secs > 15 ? `${secs}s so far. Slow signals can take a minute, please keep this open.` : "Almost done") : eta ? `about ${eta}s left` : "";
 
   return (
     <Field label={label} error={httpsErr(value)} hint="JPG, PNG, WebP, GIF or AVIF up to 10 MB">

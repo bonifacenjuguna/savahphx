@@ -1,4 +1,4 @@
-# Bio page + /admin (v3.5)
+# Bio page + /admin (v3.6)
 
 1. Vercel: import the repo, add Neon (Marketplace) and a Blob store (Storage tab).
 2. Env vars from `.env.example`: DATABASE_URL, ADMIN_PASSWORD, SESSION_SECRET, BLOB_READ_WRITE_TOKEN.
@@ -27,3 +27,7 @@ v3.2 adds text and crypto wallet cards (the `qrcode` package makes the QR codes,
 - **Banner:** an uploaded banner is always shown (Classic switches to the Banner look), stretches across the full width, and has Fill/Stretch, height and fade controls.
 - **Logos:** CodePen fixed. Every logo now falls back to a link glyph instead of vanishing. About 70 more platforms and 45 crypto networks (searchable, grouped).
 - **Dashboard:** no permanent "All changes saved" pill. A one-time confirmation appears when you save. Unsaved edits show as "N changes to review", opening a list where you can discard changes one by one or per card. Header chips stay in one row.
+
+## v3.6
+- **Uploads, the real cause:** your Blob store is *private*, and the app asked it for *public* files, so every upload was refused and the dashboard just kept retrying (it looked like it was stuck at 99%). The upload route now stores images privately and serves them to visitors through `/api/img`, with an automatic fallback for public stores. `@vercel/blob` is upgraded to 2.3 for private storage. Slow-connection handling from v3.5 is kept.
+- Everything from v3.5 is included (banner controls, platforms and crypto networks, logo fallbacks, change review).
