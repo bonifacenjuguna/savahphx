@@ -212,5 +212,11 @@ button.cw{width:100%;text-align:left}
 .hours{display:flex;align-items:flex-end;gap:3px;height:70px;padding:8px;background:var(--in);border-radius:14px;border:1px solid #28324a}
 .hours i{flex:1;background:var(--ac);border-radius:3px 3px 0 0;transform-origin:bottom;animation:grow .6s both}
 
-/* Keep the live header sample compact inside the settings sheet. */
-.sh .mini{height:176px;min-height:176px;padding:12px 16px;gap:8px;overflow:hidden}
+/* v3.3: header preview can no longer slide under the controls; sheet spacing is tighter */
+.sb{grid-auto-rows:max-content}
+.sb>*{min-width:0}
+.sb.dense{gap:10px;padding-top:12px}
+.sb.dense .f{gap:5px}
+.sb.dense .gh{margin-top:4px}
+.sb>.mini.hdpv{flex:none;align-self:start;box-sizing:border-box;padding:18px 16px;margin:2px 0 4px;height:calc(min(var(--av),120px) + 38px);min-height:calc(min(var(--av),120px) + 38px);isolation:isolate}
+.sb>.mini.hdpv .av{flex:none}

@@ -12,6 +12,7 @@ export const links = pgTable("links", {
   visible: boolean("visible").notNull().default(true),
   uid: text("uid"), // stable key used by shortcuts
   shortcutOf: text("shortcut_of"), // legacy (v2)
+  shortcut: text("shortcut"), // legacy (v1) column some databases still carry; declared so drizzle never offers to drop it
   platform: text("platform"),
   handle: text("handle"),
   asIcon: boolean("as_icon").notNull().default(false),

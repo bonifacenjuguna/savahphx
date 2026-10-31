@@ -79,9 +79,9 @@ export function Powered({ t, inline }: { t: Settings; inline?: boolean }) {
 }
 
 // Small themed box the admin uses to preview things in place.
-export function Mini({ t, children, motion }: { t: Settings; children: React.ReactNode; motion?: boolean }) {
+export function Mini({ t, children, motion, className = "" }: { t: Settings; children: React.ReactNode; motion?: boolean; className?: string }) {
   return (
-    <div className={`mini${t.avatarGlow ? " glow" : ""}`} data-style={t.style} data-font={t.font}
+    <div className={`mini${t.avatarGlow ? " glow" : ""}${className ? " " + className : ""}`} data-style={t.style} data-font={t.font}
       data-en={motion && t.entrance ? t.entranceStyle : "none"} data-hv={motion && t.hover ? t.hoverStyle : "none"} data-am={motion ? t.avatarMotion : "none"}
       style={{ ...cssVars(t), background: t.bg }}>{children}</div>
   );

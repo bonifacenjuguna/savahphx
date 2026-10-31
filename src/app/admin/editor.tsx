@@ -433,7 +433,7 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
           <Field label="Extra lines" hint="Optional, e.g. UID or location"><textarea className="in" rows={3} value={s.bio} onChange={(e) => set("bio", e.target.value)} /></Field>
           <OptColor label="Extra lines color" value={s.bioColor} auto={s.text} onChange={(v) => set("bioColor", v)} />
           <Switch on={s.showAvatar} onChange={(v) => set("showAvatar", v)} label="Show profile photo" />
-          <ImgField label="Profile photo" value={s.avatar} onChange={(v) => set("avatar", v)} />
+          <ImgField label="Profile photo" max={1024} value={s.avatar} onChange={(v) => set("avatar", v)} />
           <Switch on={s.showBanner} onChange={(v) => set("showBanner", v)} label="Show banner" />
           <ImgField label="Banner image" value={s.banner} onChange={(v) => set("banner", v)} />
           <Field label="Font"><Seg value={s.font} onChange={(v) => set("font", v)} options={FONTS.map((f) => ({ v: f, l: FONT_NAMES[f] }))} /></Field>
@@ -444,9 +444,9 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
       )}
 
       {panel === "header" && (
-        <Sheet title="Header" onClose={close}>
+        <Sheet title="Header" onClose={close} dense>
           <Switch on={s.showHeader} onChange={(v) => set("showHeader", v)} label="Show header" hint="Turn off to start straight with your links" />
-          <Mini t={s}>{s.avatar ? <img className="av" src={s.avatar} alt="" /> : <div className="av" />}</Mini>
+          <Mini t={s} className="hdpv">{s.avatar ? <img className="av" src={s.avatar} alt="" /> : <div className="av" />}</Mini>
           <Field label="Layout" hint="Banner, Side and Card use your banner image. Hero uses it as the full header."><Seg value={s.header} onChange={(v) => set("header", v)} options={LAYOUTS} /></Field>
           <Field label="Spacing" hint="How close everything sits together"><Seg value={s.density} onChange={(v) => set("density", v)} options={DENSITIES} /></Field>
           <Field label="Text alignment"><Seg value={s.align} onChange={(v) => set("align", v)} options={["left", "center", "right"] as const} /></Field>
