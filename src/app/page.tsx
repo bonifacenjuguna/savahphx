@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { ensureSchema } from "@/db/ensure";
 import { links, settings } from "@/db/schema";
 import Page from "@/components/Page";
+import Track from "@/components/Track";
 import { fromDb } from "@/lib/rows";
 import { defaultSettings, normalize, type Row } from "@/lib/theme";
 
@@ -30,5 +31,5 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Home() {
   const { rows, t } = await load();
-  return <Page rows={rows} t={t} />;
+  return <><Page rows={rows} t={t} /><Track /></>;
 }

@@ -1,44 +1,25 @@
 import { config } from "dotenv";
 config({ path: ".env.local" });
 
+// Safe to run on every build: only fills an EMPTY database, never overwrites anything you saved.
 async function main() {
-  if (!process.env.DATABASE_URL) {
-    throw new Error("DATABASE_URL is required to initialize the database.");
-  }
-
+  if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not set");
   const { db } = await import("./index");
+  const { ensureSchema } = await import("./ensure");
   const { links, settings } = await import("./schema");
   const { defaultSettings } = await import("../lib/theme");
-
-  // Only add starter links to a brand-new/empty links table.
-  // Never delete or overwrite links that have been edited in Admin.
-  const existingLinks = await db.select({ id: links.id }).from(links).limit(1);
-
-  if (existingLinks.length === 0) {
+  await ensureSchema();
+  const have = await db.select({ id: links.id }).from(links).limit(1);
+  if (!have.length) {
     await db.insert(links).values([
-      { kind: "social", title: "Instagram", url: "https://instagram.com/", icon: "instagram", position: 0 },
-      { kind: "social", title: "WhatsApp", url: "https://wa.me/", icon: "whatsapp", position: 1 },
-      { kind: "social", title: "TikTok", url: "https://tiktok.com/", icon: "tiktok", position: 2 },
-      { kind: "social", title: "YouTube", url: "https://youtube.com/", icon: "youtube", position: 3 },
-      { kind: "social", title: "Threads", url: "https://threads.net/", icon: "threads", position: 4 },
-      { kind: "social", title: "Facebook", url: "https://facebook.com/", icon: "facebook", position: 5 },
-      { kind: "social", title: "X", url: "https://x.com/", icon: "x", position: 6 },
-      { kind: "card", title: "Instagram", url: "https://instagram.com/", icon: "instagram", width: "half", position: 0 },
-      { kind: "card", title: "TikTok", url: "https://tiktok.com/", icon: "tiktok", width: "half", position: 1 },
-      { kind: "card", title: "Chat with Savahphx (WhatsApp)", url: "https://wa.me/", icon: "whatsapp", position: 2 },
-      { kind: "card", title: "Savah - Mobile Gaming & PUBG", url: "https://youtube.com/", icon: "youtube", position: 3 },
+      { kind: "card", type: "link", platform: "instagram", handle: "johndoe", title: "Instagram", url: "https://instagram.com/johndoe", width: "half", position: 0, uid: "demo-instagram", asIcon: true },
+      { kind: "card", type: "link", platform: "tiktok", handle: "johndoe", title: "TikTok", url: "https://www.tiktok.com/@johndoe", width: "half", position: 1, uid: "demo-tiktok", asIcon: true },
+      { kind: "card", type: "link", platform: "whatsapp", handle: "254700000000", title: "Chat on WhatsApp", url: "https://wa.me/254700000000", position: 2, uid: "demo-whatsapp", asIcon: true },
+      { kind: "card", type: "link", platform: "youtube", handle: "johndoe", title: "My YouTube channel", url: "https://www.youtube.com/@johndoe", position: 3, uid: "demo-youtube", asIcon: true },
+      { kind: "card", type: "text", title: "Business inquiries", body: "hello@johndoe.com", url: "", position: 4, uid: "demo-note" },
     ]);
-    console.log("Inserted starter links.");
-  } else {
-    console.log("Links already exist; preserving existing links.");
   }
-
-  // Seed settings only if the singleton settings row does not exist.
   await db.insert(settings).values({ id: 1, data: defaultSettings }).onConflictDoNothing();
-  console.log("Database bootstrap completed.");
+  console.log("Seed check done.");
 }
-
-main().catch((error) => {
-  console.error("Database bootstrap failed:", error);
-  process.exitCode = 1;
-});
+main();

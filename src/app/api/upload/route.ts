@@ -2,6 +2,12 @@ import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
 
+// Quick pre-flight so the dashboard can explain problems instead of hanging.
+export async function GET() {
+  if (!(await isAdmin())) return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
+  return NextResponse.json({ ok: true, blob: !!process.env.BLOB_READ_WRITE_TOKEN });
+}
+
 // Browser uploads straight to Blob (up to 10 MB), so Vercel's small request-body limit never applies.
 export async function POST(request: Request) {
   const body = (await request.json()) as HandleUploadBody;

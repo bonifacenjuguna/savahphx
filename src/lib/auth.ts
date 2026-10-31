@@ -18,3 +18,6 @@ export async function isAdmin() {
   if (!exp || !sig) return false;
   return safeEq(sig, sign(exp)) && Number(exp) > Date.now();
 }
+
+// Lets you exclude other devices from stats by opening a private link on them.
+export const ignoreToken = () => createHmac("sha256", process.env.SESSION_SECRET ?? "").update("ignore-device").digest("hex").slice(0, 32);

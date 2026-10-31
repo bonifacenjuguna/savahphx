@@ -1,4 +1,4 @@
-import { boolean, integer, jsonb, pgTable, serial, text } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
 
 export const links = pgTable("links", {
   id: serial("id").primaryKey(),
@@ -17,9 +17,23 @@ export const links = pgTable("links", {
   asIcon: boolean("as_icon").notNull().default(false),
   color: boolean("color").notNull().default(false),
   shape: text("shape"),
+  type: text("type").notNull().default("link"), // link | text | wallet
+  body: text("body"),
+  network: text("network"),
+  memo: text("memo"),
+  qr: boolean("qr").notNull().default(true),
 });
 
 export const settings = pgTable("settings", {
   id: integer("id").primaryKey(),
   data: jsonb("data").$type<Record<string, unknown>>().notNull(),
+});
+
+export const events = pgTable("events", {
+  id: serial("id").primaryKey(),
+  t: text("t").notNull(), // view | click | icon | copy | copylink | open | share
+  k: text("k"), title: text("title"), v: text("v").notNull(),
+  at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+  country: text("country"), city: text("city"), device: text("device"), os: text("os"),
+  browser: text("browser"), ref: text("ref"), lang: text("lang"),
 });

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-export default function CardMenu({ url, title }: { url: string; title: string }) {
+export default function CardMenu({ url, title, id }: { url: string; title: string; id: string }) {
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState("");
   const box = useRef<HTMLDivElement>(null);
@@ -33,9 +33,9 @@ export default function CardMenu({ url, title }: { url: string; title: string })
       </button>
       {open && (
         <div className="menu" role="menu">
-          <a role="menuitem" href={url} {...(web ? { target: "_blank", rel: "noopener noreferrer" } : {})}>Open link</a>
-          <button type="button" role="menuitem" onClick={copy}>{note || "Copy link"}</button>
-          <button type="button" role="menuitem" onClick={share}>Share</button>
+          <a role="menuitem" href={url} data-tk={id} data-ta="click" data-tt={title} {...(web ? { target: "_blank", rel: "noopener noreferrer" } : {})}>Open link</a>
+          <button type="button" role="menuitem" data-tk={id} data-ta="copylink" data-tt={title} onClick={copy}>{note || "Copy link"}</button>
+          <button type="button" role="menuitem" data-tk={id} data-ta="share" data-tt={title} onClick={share}>Share</button>
         </div>
       )}
     </div>

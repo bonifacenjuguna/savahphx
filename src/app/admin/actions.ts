@@ -8,6 +8,7 @@ import { links, settings } from "@/db/schema";
 import { isAdmin, makeToken, safeEq } from "@/lib/auth";
 import { byId, resolveUrl } from "@/lib/platforms";
 import { cleanRow } from "@/lib/rows";
+import { netById } from "@/lib/crypto";
 import { normalize, type Layout, type Row, type Settings } from "@/lib/theme";
 
 // Best-effort brute-force limit (per server instance).
@@ -31,6 +32,8 @@ export async function login(fd: FormData) {
     httpOnly: true, secure: process.env.NODE_ENV === "production",
     sameSite: "strict", path: "/", maxAge: 7 * 86400,
   });
+  // Keeps this device out of your stats even after the admin session ends.
+  (await cookies()).set("ig", "1", { secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 365 * 86400 });
   redirect("/admin");
 }
 
@@ -42,22 +45,30 @@ export async function logout() {
 export async function saveAll(p: { rows: Row[]; settings: Settings }) {
   if (!(await isAdmin())) throw new Error("Unauthorized");
   const okImg = (u: string) => /^https:\/\//i.test(u);
-  const vals = p.rows.map((r, i) => {
-    const pl = byId(r.platform);
-    const { url, error } = resolveUrl(pl, r.handle, r.url);
+  const vals = p.rows.map((raw, i) => {
+    const r = cleanRow(raw);
     const title = r.title.trim().slice(0, 80);
-    if (!title || error) throw new Error("Invalid link");
+    let url = "";
+    let body: string | null = null;
+    if (r.type === "link") {
+      const x = resolveUrl(byId(r.platform), r.handle, r.url);
+      if (x.error) throw new Error("Invalid link");
+      url = x.url;
+    } else {
+      body = r.body.trim().slice(0, r.type === "text" ? 1000 : 300);
+      if (!body) throw new Error("Empty card");
+    }
+    if (!title) throw new Error("Missing title");
+    const link = r.type === "link";
+    const pl = link ? byId(r.platform) : undefined;
     return {
-      kind: "card", title, url,
-      icon: /^[a-z0-9]+$/.test(r.icon) ? r.icon : null,
-      image: okImg(r.image) ? r.image : null,
-      width: r.size === "half" || r.size === "third" ? r.size : "full",
-      position: i, visible: !!r.visible,
-      uid: String(r.key).replace(/[^\w-]/g, "").slice(0, 64) || crypto.randomUUID(),
-      shortcutOf: null, platform: pl?.id ?? "custom",
-      handle: pl && pl.kind !== "url" ? r.handle.trim().slice(0, 200) : null,
-      asIcon: !!r.asIcon, color: !!r.color,
-      shape: ["circle", "rounded", "square"].includes(r.shape) ? r.shape : null,
+      kind: "card", title, url, type: r.type, body,
+      icon: link && /^[a-z0-9]+$/.test(r.icon) ? r.icon : null, image: link && okImg(r.image) ? r.image : null,
+      width: r.size, position: i, visible: r.visible, uid: r.key.slice(0, 64), shortcutOf: null,
+      platform: link ? pl?.id ?? "custom" : null, handle: pl && pl.kind !== "url" ? r.handle.trim().slice(0, 200) : null,
+      network: r.type === "wallet" ? (netById(r.network) ? r.network : "custom") : null,
+      memo: r.type === "wallet" ? r.memo.trim().slice(0, 80) : null, qr: r.qr,
+      asIcon: link && r.asIcon, color: r.color, shape: r.shape || null,
     };
   });
   await ensureSchema();
