@@ -524,37 +524,50 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
       {panel === "profile" && (
         <Sheet title="Profile" onClose={close}>
           <p className="mut">Empty fields hide on their own, and everything below moves up to fill the space.</p>
+
+          <h3 className="gh">Name</h3>
           <Switch on={s.showName} onChange={(v) => set("showName", v)} label="Show name" />
           <Field label="Name" hint="Shown above your bio"><input className="in" value={s.name} onChange={(e) => set("name", e.target.value)} /></Field>
+          <Range label="Name size" value={s.nameSize} min={11} max={40} unit="px" onChange={(v) => set("nameSize", v)} />
           <OptColor label="Name color" value={s.nameColor} auto={s.text} onChange={(v) => set("nameColor", v)} />
+          <Switch on={s.verified} onChange={(v) => set("verified", v)} label="Verified checkmark" hint="A badge right beside your name" />
+          {s.verified && <Color label="Checkmark color" value={s.verifiedColor} onChange={(v) => set("verifiedColor", v)} />}
+
+          <h3 className="gh">Bio</h3>
           <Switch on={s.showTitle} onChange={(v) => set("showTitle", v)} label="Show bio" />
           <Field label="Bio"><input className="in" value={s.title} onChange={(e) => set("title", e.target.value)} /></Field>
+          <Range label="Bio size" value={s.titleSize} min={14} max={56} unit="px" onChange={(v) => set("titleSize", v)} />
           <OptColor label="Bio color" value={s.titleColor} auto={s.text} onChange={(v) => set("titleColor", v)} />
+          <Switch on={s.upper} onChange={(v) => set("upper", v)} label="Uppercase bio" />
+
+          <h3 className="gh">Extra lines</h3>
           <Switch on={s.showBio} onChange={(v) => set("showBio", v)} label="Show extra lines" />
           <Field label="Extra lines" hint="Optional, e.g. UID or location"><textarea className="in" rows={3} value={s.bio} onChange={(e) => set("bio", e.target.value)} /></Field>
+          <Range label="Extra line size" value={s.bioSize} min={11} max={24} unit="px" onChange={(v) => set("bioSize", v)} />
           <OptColor label="Extra lines color" value={s.bioColor} auto={s.text} onChange={(v) => set("bioColor", v)} />
+
+          <h3 className="gh">Photos</h3>
           <Switch on={s.showAvatar} onChange={(v) => set("showAvatar", v)} label="Show profile photo" />
           <ImgField label="Profile photo" max={1024} value={s.avatar} onChange={(v) => set("avatar", v)} />
           <Switch on={s.showBanner} onChange={(v) => set("showBanner", v)} label="Show banner" />
           <ImgField label="Banner image" value={s.banner} onChange={(v) => set("banner", v)} />
+
+          <h3 className="gh">Font</h3>
           <Field label="Font"><Seg value={s.font} onChange={(v) => set("font", v)} options={FONTS.map((f) => ({ v: f, l: FONT_NAMES[f] }))} /></Field>
-          <Range label="Bio size" value={s.titleSize} min={14} max={56} unit="px" onChange={(v) => set("titleSize", v)} />
-          <Range label="Extra line size" value={s.bioSize} min={11} max={24} unit="px" onChange={(v) => set("bioSize", v)} />
-          <Switch on={s.upper} onChange={(v) => set("upper", v)} label="Uppercase bio" />
         </Sheet>
       )}
 
       {panel === "header" && (
         <Sheet title="Header" onClose={close} dense>
           <Switch on={s.showHeader} onChange={(v) => set("showHeader", v)} label="Show header" hint="Turn off to start straight with your links" />
-          <Mini t={s} className="hdpv">{s.avatar ? <img className="av" src={s.avatar} alt="" /> : <div className="av" />}</Mini>
-          <Field label="Layout" hint="Your banner image always shows. Classic switches to the Banner look when you upload one."><Seg value={s.header} onChange={(v) => set("header", v)} options={LAYOUTS} /></Field>
+          <div className="hdfull" aria-label="Live preview of your page"><Page rows={rows.filter((r) => r.visible).slice(0, 4)} t={s} embedded /></div>
+          <Field label="Layout" hint="Your banner always shows. Classic switches to the Banner look when you upload one."><Seg value={s.header} onChange={(v) => set("header", v)} options={LAYOUTS} /></Field>
           <Field label="Banner fit" hint="Fill crops the picture to cover the whole banner. Stretch squeezes the full picture to fit exactly."><Seg value={s.bannerFit} onChange={(v) => set("bannerFit", v)} options={[{ v: "cover", l: "Fill" }, { v: "stretch", l: "Stretch" }]} /></Field>
           <Range label="Banner height" value={s.bannerH} min={100} max={380} unit="px" onChange={(v) => set("bannerH", v)} />
           <Switch on={s.bannerFade} onChange={(v) => set("bannerFade", v)} label="Fade banner into the page" />
           <Field label="Spacing" hint="How close everything sits together"><Seg value={s.density} onChange={(v) => set("density", v)} options={DENSITIES} /></Field>
-          <Field label="Text alignment"><Seg value={s.align} onChange={(v) => set("align", v)} options={["left", "center", "right"] as const} /></Field>
-          <Field label="Photo position"><Seg value={s.avatarPos} onChange={(v) => set("avatarPos", v)} options={["left", "center", "right"] as const} /></Field>
+          <Field label="Photo position" hint="Left or right puts your name and bio right beside the photo."><Seg value={s.avatarPos} onChange={(v) => set("avatarPos", v)} options={["left", "center", "right"] as const} /></Field>
+          <Field label="Text alignment" hint={s.avatarPos === "center" ? "Used when the photo is centered." : "Not needed now: the text follows the photo's side."}><Seg value={s.align} onChange={(v) => set("align", v)} options={["left", "center", "right"] as const} /></Field>
           <Field label="Photo shape"><Seg value={s.avatarShape} onChange={(v) => set("avatarShape", v)} options={["circle", "rounded", "square"] as const} /></Field>
           <Range label="Photo size" value={s.avatarSize} min={64} max={200} unit="px" onChange={(v) => set("avatarSize", v)} />
           <Switch on={s.avatarGlow} onChange={(v) => set("avatarGlow", v)} label="Photo glow" />

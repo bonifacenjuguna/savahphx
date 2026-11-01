@@ -14,7 +14,7 @@ export type Settings = {
   name: string; title: string; bio: string; avatar: string; banner: string; bannerFit: "cover" | "stretch"; bannerH: number; bannerFade: boolean;
   header: (typeof LAYOUTS)[number]; align: (typeof AL)[number];
   avatarShape: (typeof SH)[number]; avatarSize: number; avatarPos: (typeof AL)[number]; avatarGlow: boolean;
-  titleSize: number; bioSize: number; upper: boolean; font: (typeof FONTS)[number]; density: (typeof DENSITIES)[number];
+  nameSize: number; titleSize: number; bioSize: number; verified: boolean; verifiedColor: string; upper: boolean; font: (typeof FONTS)[number]; density: (typeof DENSITIES)[number];
   socialPos: "top" | "bottom" | "both" | "off"; socialStyle: "plain" | "chip"; socialSize: number; iconShape: (typeof SH)[number];
   style: (typeof STYLE_IDS)[number];
   bgType: (typeof BG_TYPES)[number]; bg: string; bg2: string; bgImage: string; bgDim: number; bgBlur: number;
@@ -32,7 +32,7 @@ export const defaultSettings: Settings = {
   name: "John Doe", title: "Creator and Developer", bio: "@johndoe", avatar: "", banner: "", bannerFit: "cover", bannerH: 200, bannerFade: true,
   header: "classic", align: "center",
   avatarShape: "circle", avatarSize: 112, avatarPos: "center", avatarGlow: true,
-  titleSize: 26, bioSize: 15, upper: false, font: "sora", density: "cozy",
+  nameSize: 16, titleSize: 26, bioSize: 15, verified: false, verifiedColor: "#1d9bf0", upper: false, font: "sora", density: "cozy",
   socialPos: "top", socialStyle: "chip", socialSize: 46, iconShape: "circle",
   style: "glass",
   bgType: "mesh", bg: "#070910", bg2: "#1b1245", bgImage: "", bgDim: 45, bgBlur: 0,
@@ -111,6 +111,7 @@ export function normalize(raw: unknown): Settings {
     header: pick(r.header, LAYOUTS, d.header), align: pick(r.align, AL, d.align),
     avatarShape: pick(r.avatarShape, SH, d.avatarShape), avatarSize: num(r.avatarSize, 64, 200, d.avatarSize),
     avatarPos: pick(r.avatarPos, AL, d.avatarPos), avatarGlow: bool(r.avatarGlow, d.avatarGlow),
+    nameSize: num(r.nameSize, 11, 40, d.nameSize), verified: bool(r.verified, d.verified), verifiedColor: hex(r.verifiedColor, d.verifiedColor),
     titleSize: num(r.titleSize, 14, 56, d.titleSize), bioSize: num(r.bioSize, 11, 24, d.bioSize),
     upper: bool(r.upper, d.upper), font: pick(r.font, FONTS, d.font), density: pick(r.density, DENSITIES, d.density),
     socialPos: pick(r.socialPos, ["top", "bottom", "both", "off"], d.socialPos),
@@ -140,7 +141,7 @@ export function normalize(raw: unknown): Settings {
 
 export const RESET_GROUPS: { id: string; name: string; content?: boolean; keys: (keyof Settings)[] }[] = [
   { id: "profile", name: "Name, bio and photos", content: true, keys: ["name", "title", "bio", "avatar", "banner"] },
-  { id: "text", name: "Text look and visibility", keys: ["font", "titleSize", "bioSize", "upper", "showName", "showTitle", "showBio", "showAvatar", "showBanner", "nameColor", "titleColor", "bioColor"] },
+  { id: "text", name: "Text look and visibility", keys: ["font", "nameSize", "titleSize", "bioSize", "upper", "verified", "verifiedColor", "showName", "showTitle", "showBio", "showAvatar", "showBanner", "nameColor", "titleColor", "bioColor"] },
   { id: "header", name: "Header layout", keys: ["header", "align", "avatarShape", "avatarSize", "avatarPos", "avatarGlow", "showHeader", "density", "bannerFit", "bannerH", "bannerFade"] },
   { id: "style", name: "Style and colors", keys: ["style", "accent", "accent2", "text", "glassTint", "glassBlur", "glassOpacity", "glassBorder", "radius", "cardColor", "iconColor"] },
   { id: "bg", name: "Background", keys: ["bgType", "bg", "bg2", "bgImage", "bgDim", "bgBlur"] },
@@ -165,7 +166,7 @@ const NAMES: Partial<Record<keyof Settings, string>> = {
   entrance: "Entrance animation", hover: "Hover effect", socialPos: "Icon row placement", poweredUrl: "Footer link", poweredPos: "Footer style",
   poweredSide: "Footer edge", poweredAlign: "Footer alignment", poweredShow: "Footer tag", avatar: "Profile photo", banner: "Banner image",
   bgImage: "Background image", glassTint: "Surface tint", upper: "Uppercase bio", density: "Spacing", header: "Header layout", iconShape: "Icon shape",
-  bannerFit: "Banner fit", bannerH: "Banner height", bannerFade: "Banner fade", speed: "Animation speed", stagger: "Delay between cards",
+  nameSize: "Name size", titleSize: "Bio size", bioSize: "Extra line size", verified: "Verified checkmark", verifiedColor: "Checkmark color", nameColor: "Name color", titleColor: "Bio color", bioColor: "Extra lines color", bannerFit: "Banner fit", bannerH: "Banner height", bannerFade: "Banner fade", speed: "Animation speed", stagger: "Delay between cards",
 };
 export const settingLabel = (k: keyof Settings) => NAMES[k] ?? k.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
 export const settingGroup = (k: keyof Settings) => RESET_GROUPS.find((g) => g.keys.includes(k))?.name ?? "Other";

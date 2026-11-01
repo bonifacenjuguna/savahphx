@@ -252,3 +252,8 @@ button.cw{width:100%;text-align:left}
 .ct{flex:1;min-width:0;display:grid;gap:3px}
 .ct small{color:#8b95aa;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .sw{display:inline-block;width:12px;height:12px;border-radius:50%;border:1px solid #ffffff44}
+
+/* v3.6: full live preview inside the Header panel */
+.sb>.hdfull{position:sticky;top:-16px;z-index:6;flex:none;align-self:start;width:100%;height:min(300px,40dvh);margin:-4px 0 2px;border-radius:16px;overflow:hidden;border:1px solid #28324a;background:#000;box-shadow:0 10px 24px #0009}
+.sb>.hdfull .pg{height:100%}
+.sb>.hdfull .wrap{padding-bottom:24px}

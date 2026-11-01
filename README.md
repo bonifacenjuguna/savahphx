@@ -1,4 +1,4 @@
-# Bio page + /admin (v3.5)
+# Bio page + /admin (v3.6)
 
 1. Vercel: import the repo, add Neon (Marketplace) and a Blob store (Storage tab).
 2. Env vars from `.env.example`: DATABASE_URL, ADMIN_PASSWORD, SESSION_SECRET, BLOB_READ_WRITE_TOKEN.
@@ -28,3 +28,10 @@ v3.2 adds text and crypto wallet cards (the `qrcode` package makes the QR codes,
 - **Logos:** CodePen fixed. Every logo now falls back to a link glyph instead of vanishing. About 70 more platforms and 45 crypto networks (searchable, grouped).
 - **Dashboard:** no permanent "All changes saved" pill. A one-time confirmation appears when you save. Unsaved edits show as "N changes to review", opening a list where you can discard changes one by one or per card. Header chips stay in one row.
 - **Uploads fixed (merged from the working build):** the Blob store is private, so uploads are now saved privately and served to visitors through `/api/img`; public stores still work. `@vercel/blob` upgraded to 2.3+. Run `npm install` after replacing the files.
+
+## v3.6
+- **Header layout:** with the photo on the left or right, your name, bio and extra lines now sit right beside it (and follow its side) instead of floating in the middle below. The icon row follows the same side. A centered photo keeps the classic stacked look.
+- **Banner:** the banner now fades out smoothly as it comes down into the page (switch it off under Header). The extra glow and card fade were removed so the header looks cleaner.
+- **Profile panel:** reorganised into Name, Bio, Extra lines and Photos. New **Name size**, and every text has its own size and color.
+- **Verified checkmark:** optional badge beside your name (beside the bio if the name is hidden), with its own color.
+- **Header panel:** shows a live preview of the whole page (header, icon row and your first links) pinned at the top, so you see how everything below looks while you tune the photo.

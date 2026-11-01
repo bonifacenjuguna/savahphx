@@ -33,10 +33,20 @@ export function cssVars(t: Settings) {
     "--nl": light ? "#ffffff" : mixHex(t.bg, "#ffffff", 0.09), "--nd": light ? mixHex(t.bg, "#000000", 0.18) : mixHex(t.bg, "#000000", 0.55),
     "--blur": `${t.glassBlur}px`, "--op": `${t.glassOpacity}%`, "--bd": `${t.glassBorder}%`, "--radius": `${t.radius}px`,
     "--av": `${t.avatarSize}px`, "--avr": AVR[t.avatarShape], "--aj": J[t.avatarPos], "--al": t.align, "--jc": JC[t.align],
-    "--ts": `${t.titleSize}px`, "--bs": `${t.bioSize}px`, "--up": t.upper ? "uppercase" : "none", "--soc": `${t.socialSize}px`,
+    "--ns": `${t.nameSize}px`, "--ts": `${t.titleSize}px`, "--bs": `${t.bioSize}px`, "--up": t.upper ? "uppercase" : "none", "--soc": `${t.socialSize}px`,
     "--dim": t.bgType === "image" ? t.bgDim / 100 : 0, "--speed": t.speed, "--stg": `${t.stagger}ms`,
     "--bnh": `${t.bannerH}px`, "--bfit": t.bannerFit === "stretch" ? "fill" : "cover", "--gap": `${d.gap}px`, "--hg": `${d.hg}px`, "--pt": `${d.pt}px`, "--ha": `${d.ha}px`, "--cp": `${d.cp}px`,
   } as React.CSSProperties;
+}
+
+// Verification checkmark (a rounded seal with a tick), sized to the text it sits beside.
+export function Verified({ color }: { color: string }) {
+  return (
+    <svg className="vf" viewBox="0 0 24 24" role="img" aria-label="Verified">
+      <path fill={color} d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
+      <path fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" d="m8.6 12.2 2.4 2.4 4.5-4.7" />
+    </svg>
+  );
 }
 
 // One logo, normal (given color) or colored (brand).
@@ -108,6 +118,10 @@ export default function Page({ rows, t, embedded }: { rows: Row[]; t: Settings; 
   const bn = t.banner || (L === "hero" ? t.avatar : "");
   const hasText = (t.showName && !!t.name) || (t.showTitle && !!t.title) || (t.showBio && !!t.bio);
   const showHd = t.showHeader && (showBn || showAv || hasText);
+  // Photo on a side: photo and text sit next to each other and the text follows the photo's side.
+  const rowMode = showAv && L !== "hero" && (t.avatarPos !== "center" || L === "side");
+  const nameOn = t.showName && !!t.name;
+  const badge = t.verified ? <Verified color={t.verifiedColor} /> : null;
   const topNav = t.socialPos === "top" || t.socialPos === "both" ? nav() : null;
   const botNav = t.socialPos === "bottom" || t.socialPos === "both" ? nav(true) : null;
   const pw = t.poweredShow && !!(t.poweredName || t.poweredText || t.poweredLogo || t.poweredPlatform);
@@ -120,14 +134,14 @@ export default function Page({ rows, t, embedded }: { rows: Row[]; t: Settings; 
       </div>
       <main className={`wrap${showHd ? "" : " pt"}`}>
         {showHd ? (
-          <header className={`hd hd-${L}${showAv ? "" : " noav"}`}>
+          <header className={`hd hd-${L}${showAv ? "" : " noav"}${rowMode ? " row" : ""}${rowMode && showBn ? " ovl" : ""}`}>
             {showBn && <div className={`bn${t.bannerFade ? "" : " nf"}`}>{bn && <ZoomImg src={bn} />}</div>}
             <div className="sr">
               {showAv && (t.avatar ? <ZoomImg className="av" src={t.avatar} /> : <div className="av" />)}
               {hasText && (
                 <div className="tx">
-                  {t.showName && t.name && <h2 className="nm">{t.name}</h2>}
-                  {t.showTitle && t.title && <h1>{t.title}</h1>}
+                  {nameOn && <h2 className="nm"><span>{t.name}</span>{badge}</h2>}
+                  {t.showTitle && t.title && (nameOn || !badge ? <h1>{t.title}</h1> : <h1 className="vb"><span>{t.title}</span>{badge}</h1>)}
                   {t.showBio && t.bio && <p className="bio">{t.bio}</p>}
                 </div>
               )}
