@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import NotificationRichText from "./NotificationRichText";
 import { deleteNotification, saveNotification } from "@/app/admin/notifications/actions";
 
 type Notice={id:number;title:string;excerpt:string|null;body:string;image:string|null;category:string;status:string;pinned:boolean;createdAt:string;publishedAt:string|null};
@@ -19,7 +20,7 @@ export default function NotificationManager({initial}:{initial:Notice[]}) {
    <div className="g2"><label className="f"><span className="fl">Category</span><select className="in" value={form.category} onChange={e=>change("category",e.target.value)}>{["Announcement","Product update","Maintenance","Feature","Security","Community","Important"].map(x=><option key={x}>{x}</option>)}</select></label><label className="f"><span className="fl">Visibility</span><select className="in" value={form.status} onChange={e=>change("status",e.target.value)}><option value="draft">Save as draft</option><option value="published">Publish now</option></select></label></div>
    <label className="f"><span className="fl">Message content <small>Markdown supported: # headings, **bold**, *italic*, - lists and links on their own line.</small></span><textarea className="in notice-editor" rows={10} maxLength={12000} value={form.body} onChange={e=>change("body",e.target.value)} placeholder={"Write your update…\n\n## What's new\n- First improvement\n- Another detail\n\n**Important:** Add the details your visitors need."}/></label>
    <div className="notice-format-tools"><button type="button" onClick={()=>change("body",form.body+"\n## Heading")}>H2</button><button type="button" onClick={()=>change("body",form.body+"\n**bold text**")}>Bold</button><button type="button" onClick={()=>change("body",form.body+"\n- List item")}>List</button><button type="button" onClick={()=>setPreview(!preview)}>{preview?"Edit":"Preview"}</button></div>
-   {preview&&<div className="notice-preview"><h3>{form.title||"Notification preview"}</h3><p>{form.excerpt}</p><pre>{form.body}</pre></div>}
+   {preview&&<div className="notice-preview"><h3>{form.title||"Notification preview"}</h3><p>{form.excerpt}</p><NotificationRichText body={form.body}/></div>}
    <div className="f"><span className="fl">Image attachment</span><div className="notice-image-tools"><label className="btn">Upload image<input hidden type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" onChange={e=>upload(e.target.files?.[0])}/></label><input className="in" value={form.image} onChange={e=>change("image",e.target.value)} placeholder="Or paste an https:// image URL"/></div>{form.image&&<div className="notice-image-preview"><img src={form.image} alt="Notification attachment preview"/><button type="button" className="btn danger" onClick={()=>change("image","")}>Remove image</button></div>}</div>
    <label className="swr"><span><b>Pin this notification</b><small>Keep it at the top of the inbox.</small></span><input type="checkbox" checked={form.pinned} onChange={e=>change("pinned",e.target.checked)}/></label>
    {message&&<p className="mut" role="status">{message}</p>}
