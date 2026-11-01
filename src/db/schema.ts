@@ -26,6 +26,26 @@ export const links = pgTable("links", {
   tall: integer("tall").notNull().default(1), // card height: 1 | 2 | 3 rows
 });
 
+export const notes = pgTable("notes", {
+  id: serial("id").primaryKey(),
+  uid: text("uid").notNull(),
+  title: text("title").notNull().default(""),
+  body: text("body").notNull().default(""),
+  kind: text("kind").notNull().default("update"),
+  emoji: text("emoji").notNull().default(""),
+  images: jsonb("images").$type<string[]>().notNull().default([]),
+  ctaLabel: text("cta_label").notNull().default(""),
+  ctaUrl: text("cta_url").notNull().default(""),
+  accent: text("accent").notNull().default(""),
+  pinned: boolean("pinned").notNull().default(false),
+  popup: boolean("popup").notNull().default(false),
+  status: text("status").notNull().default("published"), // published | draft
+  publishAt: timestamp("publish_at", { withTimezone: true }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  rev: timestamp("rev", { withTimezone: true }).notNull().defaultNow(), // moves forward when a post should show as new again
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const settings = pgTable("settings", {
   id: integer("id").primaryKey(),
   data: jsonb("data").$type<Record<string, unknown>>().notNull(),

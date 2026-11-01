@@ -8,6 +8,8 @@ import Page, { CardIcon, Chip, Ico, Mini, Powered } from "@/components/Page";
 import { NETS, NET_GROUPS, netById, shortAddr, walletWarn } from "@/lib/crypto";
 import { GROUPS, PLATFORMS, byId, resolveUrl, toHandle, type Platform } from "@/lib/platforms";
 import { themeFromImage } from "@/lib/palette";
+import type { Note } from "@/lib/notes";
+import { NotifCard, NotifSheet } from "./notifs";
 import { cleanRow } from "@/lib/rows";
 import {
   AVATAR_MOTIONS, BG_MOTIONS, BG_TYPES, CONTENT_KEYS, DEMO_LAYOUTS, DENSITIES, ENTRANCES, FONTS, HOVERS, LAYOUTS, PRESETS, RESET_GROUPS, STYLES,
@@ -271,7 +273,9 @@ function List({ rows, errs, tried, setRows, open }: { rows: Row[]; errs: Record<
 const ACCENTS = ["#8ab4ff", "#a78bfa", "#34d399", "#fb923c", "#f472b6", "#facc15"];
 const FONT_NAMES = { sora: "Sora", inter: "Inter", space: "Space", dm: "DM Sans", playfair: "Serif" } as const;
 
-export default function Editor({ initial, initialSettings, initialLayouts }: { initial: Row[]; initialSettings: Settings; initialLayouts: Layout[] }) {
+export default function Editor({ initial, initialSettings, initialLayouts, initialNotes }: { initial: Row[]; initialSettings: Settings; initialLayouts: Layout[]; initialNotes: Note[] }) {
+  const [notes, setNotes] = useState(initialNotes);
+  const [nSheet, setNSheet] = useState<null | { compose: boolean }>(null);
   const [rows, setRows] = useState(initial);
   const [s, setS] = useState(initialSettings);
   const snap = JSON.stringify({ rows, s });
@@ -535,6 +539,7 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
             <List rows={rows} errs={errs} tried={tried} setRows={setRows} open={setLinkKey} />
             {!rows.length && <p className="mut empty">Nothing here yet. Tap Add to start.</p>}
           </section>
+          <NotifCard notes={notes} s={s} onOpen={(compose) => setNSheet({ compose })} />
           <section className="panel">
             <h2>Design</h2>
             <div className="tiles">
@@ -548,7 +553,7 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
         </div>
         <aside className={"pv" + (pv ? " show" : "")}>
           <button type="button" className="btn closepv" onClick={() => setPv(false)}>Close preview</button>
-          <div className="phone"><Page rows={rows} t={s} embedded /></div>
+          <div className="phone"><Page rows={rows} t={s} embedded notes={notes} /></div>
         </aside>
       </div>
 
@@ -586,6 +591,7 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
       )}
 
       {panel === "stats" && <StatsSheet onClose={close} say={say} />}
+      {nSheet && <NotifSheet notes={notes} setNotes={setNotes} s={s} set={set} rows={rows} say={say} startCompose={nSheet.compose} onClose={() => setNSheet(null)} />}
 
       {panel === "profile" && (
         <Sheet title="Profile" onClose={close}>

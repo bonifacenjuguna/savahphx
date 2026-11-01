@@ -264,3 +264,30 @@ button.cw{width:100%;text-align:left}
 html[data-adm=light] .adm{color-scheme:light;--k1:#002a75;--k2:#c4cddd;--k3:#e3e7ef;--k4:#e7ebf3;--k5:#070a11;--k6:#002a7555;--k7:#000000;--k8:#edeff4;--k9:#555f74;--k10:#cfe9d8;--k11:#1d813f;--k12:#efdfc5;--k13:#945900;--k14:#d6dce8;--k15:#b8c2d5;--k16:#cad2e2;--k17:#700000;--k18:#e3b5b5;--k19:#bb4444;--k20:#dae0eb;--k21:#a5b2cb;--k22:#cdd5e4;--k23:#6f7a90;--k24:#ced5e4;--k25:#c9d1e0;--k26:#364156;--k27:#4f0000;--k28:#cfd4e4;--k29:#ffffff;--k30:#141a26ee;--k31:#afbad3;--k32:#c2ccdf;--k33:#05070bb8;--k34:#e5e9f1;--k35:#374155;--k36:#616c82;--k37:#650000;--k38:#b5bfd7;--k39:#aa3333;--k40:#d3dae8;--k41:#b9c2d5;--k42:#00000030;--k43:#c7d2e8;--k44:#adb8d0;--k45:#00000026;--k46:#00000022;--k47:#94e0b1;--k48:#dbf0e4;--k49:#d58585;--k50:#edd8d9;--k51:#0f7232;--k52:#2ccb91;--k53:#bb1010;--k54:#3f037b;--k55:#2ccb9188;--k56:#d7dde9;--k57:#95a5c5;--k58:#0b0d12f2;--k59:#0b0d12d9;--k60:#1100a3;--k61:#d9dfeb;--k62:#192030;--k63:#ebca94;--k64:#ecd7b5;--k65:#0a361a;--k66:#00000044;}
 html[data-adm=light] .adm .btn.pri,html[data-adm=light] .adm .pri{color:#06101f}
 .pchips{display:flex;flex-wrap:wrap;gap:8px}
+
+/* v3.8: notifications in the dashboard */
+.nsec .nsum,.nsum{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 10px}
+.nsum .pill b{margin-right:4px}
+.nrow{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;margin-bottom:8px}
+.nem{display:grid;place-items:center;font-size:1.25rem;border-radius:12px}
+.nall{width:100%;margin-top:4px}
+.nnew{width:100%;margin:12px 0 4px}
+.nempty{display:grid;justify-items:center;gap:8px;text-align:center;padding:26px 14px;border:1px dashed var(--bd);border-radius:18px;margin-top:10px}
+.kchips{display:flex;flex-wrap:wrap;gap:8px}
+.kchips button{display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border-radius:99px;border:1.5px solid var(--bd);background:transparent;color:inherit;font:600 .85rem inherit;cursor:pointer}
+.kchips button i{font-style:normal}
+.kchips button.on{border-color:var(--kc);background:color-mix(in srgb,var(--kc) 20%,transparent)}
+.ntb{display:flex;flex-wrap:wrap;gap:4px;padding:6px;border:1px solid var(--bd);border-bottom:0;border-radius:14px 14px 0 0;background:var(--in)}
+.ntb button{min-width:36px;height:34px;padding:0 9px;border:0;border-radius:9px;background:transparent;color:inherit;font:600 .8rem inherit;cursor:pointer}
+.ntb button:hover{background:color-mix(in srgb,currentColor 12%,transparent)}
+.ntb .sep{width:1px;background:var(--bd);margin:4px 2px}
+.ntx{border-radius:0 0 14px 14px!important;resize:vertical;min-height:170px;line-height:1.5}
+.nemo{display:flex;flex-wrap:wrap;gap:2px;margin-top:6px}
+.nemo button{width:36px;height:36px;border:0;border-radius:10px;background:transparent;font-size:1.15rem;cursor:pointer}
+.nemo button:hover{background:color-mix(in srgb,currentColor 12%,transparent)}
+.nimg{display:grid;gap:6px;margin-bottom:6px}
+.nprev{position:relative;min-height:0!important;height:auto!important;padding:14px;border-radius:18px;overflow:hidden}
+.nprev .nt{animation:none}
+.nsave{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;position:sticky;bottom:-16px;padding:12px 0 4px;background:linear-gradient(transparent,var(--sf) 38%)}
+.nsave .pri{flex:1 1 140px}
+.btn.danger{color:var(--k19)}.btn.danger.arm{background:var(--k19);color:#fff}

@@ -31,20 +31,20 @@ export async function getStats(days: number): Promise<Stats> {
       count(distinct v) filter (where at > now() - interval '5 minutes')::int as live
       from events where at > now() - make_interval(days => ${d})`,
     sql`select to_char(date_trunc('day', at), 'YYYY-MM-DD') as d,
-      count(*) filter (where t='view')::int as views, count(*) filter (where t<>'view')::int as actions
+      count(*) filter (where t='view')::int as views, count(*) filter (where t not in ('view','note','noteclick'))::int as actions
       from events where at > now() - make_interval(days => ${d}) group by 1 order by 1`,
     sql`select k, max(title) as title,
       count(*) filter (where t in ('click','icon'))::int as clicks,
       count(*) filter (where t in ('copy','copylink','open','share'))::int as other,
       count(distinct v)::int as people
-      from events where t<>'view' and k is not null and at > now() - make_interval(days => ${d})
+      from events where t not in ('view','note','noteclick') and k is not null and at > now() - make_interval(days => ${d})
       group by k order by count(*) desc limit 15`,
     sql`select v, min(at) as first_at, max(at) as last_at,
-      count(*) filter (where t='view')::int as views, count(*) filter (where t<>'view')::int as actions,
+      count(*) filter (where t='view')::int as views, count(*) filter (where t not in ('view','note','noteclick'))::int as actions,
       max(country) as country, max(city) as city, max(device) as device, max(os) as os, max(browser) as browser, max(ref) as ref
       from events where at > now() - make_interval(days => ${d}) group by v order by max(at) desc limit 30`,
     sql`select v, k, max(title) as title, count(*)::int as n from events
-      where t<>'view' and k is not null and at > now() - make_interval(days => ${d}) group by v, k limit 5000`,
+      where t not in ('view','note','noteclick') and k is not null and at > now() - make_interval(days => ${d}) group by v, k limit 5000`,
     sql`select 'ref' as g, coalesce(nullif(ref,''),'Direct') as x, count(distinct v)::int as n from events where t='view' and at > now() - make_interval(days => ${d}) group by 2
       union all select 'country', coalesce(nullif(country,''),'Unknown'), count(distinct v)::int from events where t='view' and at > now() - make_interval(days => ${d}) group by 2
       union all select 'device', coalesce(nullif(device,''),'Unknown'), count(distinct v)::int from events where t='view' and at > now() - make_interval(days => ${d}) group by 2

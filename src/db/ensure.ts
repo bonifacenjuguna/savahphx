@@ -24,6 +24,13 @@ export function ensureSchema() {
     await sql`ALTER TABLE links ADD COLUMN IF NOT EXISTS memo text`;
     await sql`ALTER TABLE links ADD COLUMN IF NOT EXISTS qr boolean NOT NULL DEFAULT true`;
     await sql`ALTER TABLE links ADD COLUMN IF NOT EXISTS tall integer NOT NULL DEFAULT 1`;
+    await sql`CREATE TABLE IF NOT EXISTS notes (
+      id serial PRIMARY KEY, uid text NOT NULL, title text NOT NULL DEFAULT '', body text NOT NULL DEFAULT '',
+      kind text NOT NULL DEFAULT 'update', emoji text NOT NULL DEFAULT '', images jsonb NOT NULL DEFAULT '[]'::jsonb,
+      cta_label text NOT NULL DEFAULT '', cta_url text NOT NULL DEFAULT '', accent text NOT NULL DEFAULT '',
+      pinned boolean NOT NULL DEFAULT false, popup boolean NOT NULL DEFAULT false, status text NOT NULL DEFAULT 'published',
+      publish_at timestamptz, expires_at timestamptz, rev timestamptz NOT NULL DEFAULT now(), created_at timestamptz NOT NULL DEFAULT now())`;
+    await sql`CREATE UNIQUE INDEX IF NOT EXISTS notes_uid_idx ON notes (uid)`;
     await sql`CREATE TABLE IF NOT EXISTS events (
       id serial PRIMARY KEY, t text NOT NULL, k text, title text, v text NOT NULL, at timestamptz NOT NULL DEFAULT now(),
       country text, city text, device text, os text, browser text, ref text, lang text)`;

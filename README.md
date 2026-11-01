@@ -49,3 +49,11 @@ v3.2 adds text and crypto wallet cards (the `qrcode` package makes the QR codes,
 ## v3.7.1
 - **Profile block redesigned like a social profile:** name (bold, with the verified badge) and your extra lines (handle, UID...) sit beside the photo, and the bio goes underneath across the full width. The frosted card behind the text is gone; on photo backgrounds the text gets a soft outline instead. Text sizes are reset once to the new defaults (name 22, bio 16, extra lines 14), then adjustable as before.
 - Pull-to-refresh is no longer blocked.
+
+## v3.8: Notifications
+- **Bell:** a modern notification bell on your page. It rings for a second, rests, then rings again, only while something is unread, and shows a red number or dot. Position, style, size, colors, badge and ring timing are all adjustable (Notifications > Bell). It is switched on in every demo layout.
+- **Notifications page:** tapping the bell opens a full page with All and Unread tabs, mark as read or unread, mark all read, delete with undo, clear all, copy link to a post and read more on long posts. Read and deleted states are remembered per visitor, on their own device.
+- **Posts you write:** a new Notifications card in the dashboard. Each post has a type (Update, New, Offer, Important, Event, Info), title, formatted message, up to 6 images, an action button, accent color, pin, optional pop up for new visitors, schedule or draft, and automatic removal.
+- **Formatting:** toolbar and shortcuts for bold, italic, strikethrough, highlight, code, headings, bullet, numbered and task lists, quotes, links, dividers and Tip, Info and Warning boxes, plus emoji. A live preview shows exactly how it will look.
+- **Insights:** each post shows how many people saw it and how many tapped its button. These are kept out of your link statistics.
+- New `notes` table is created automatically. Drafts are never sent to visitors. Scheduled posts are only checked against the clock in the visitor's browser, so treat their text as not secret.

@@ -4,6 +4,8 @@ import CardMenu from "./CardMenu";
 import { NoteCard, WalletCard } from "./Cards";
 import { LogoImg, LogoMask } from "./Logo";
 import ZoomImg from "./Zoom";
+import Bell from "./Bell";
+import type { Note } from "@/lib/notes";
 
 const J = { left: "start", center: "center", right: "end" } as const;
 const JC = { left: "flex-start", center: "center", right: "flex-end" } as const;
@@ -118,7 +120,7 @@ export function Mini({ t, children, motion, className = "" }: { t: Settings; chi
 }
 
 // Shared by the public page and the admin live preview.
-export default function Page({ rows, t, embedded }: { rows: Row[]; t: Settings; embedded?: boolean }) {
+export default function Page({ rows, t, embedded, notes = [] }: { rows: Row[]; t: Settings; embedded?: boolean; notes?: Note[] }) {
   const cards = rows.filter((r) => r.visible);
   const eff = effSizes(cards);
   const icons = rows.filter((r) => r.type === "link" && r.asIcon && r.url);
@@ -196,6 +198,7 @@ export default function Page({ rows, t, embedded }: { rows: Row[]; t: Settings; 
         {pw && t.poweredPos === "end" && <Powered t={t} />}
       </main>
       {pw && t.poweredPos !== "end" && <Powered t={t} />}
+      <Bell notes={notes} t={t} embedded={embedded} />
     </div>
   );
 }

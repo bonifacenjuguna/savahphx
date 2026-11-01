@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { ensureSchema } from "@/db/ensure";
 import { isAdmin } from "@/lib/auth";
 
-const TYPES = new Set(["view", "click", "icon", "copy", "copylink", "open", "share"]);
+const TYPES = new Set(["view", "click", "icon", "copy", "copylink", "open", "share", "note", "noteclick"]);
 const BOT = /bot|crawl|spider|slurp|preview|headless|lighthouse|facebookexternalhit|whatsapp|telegram|discord|curl|python|node-fetch|axios/i;
 const seen = new Map<string, { n: number; t: number }>();
 const ok = () => new Response(null, { status: 204 });
