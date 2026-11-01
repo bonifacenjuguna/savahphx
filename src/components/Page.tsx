@@ -119,7 +119,7 @@ export default function Page({ rows, t, embedded }: { rows: Row[]; t: Settings; 
   const hasText = (t.showName && !!t.name) || (t.showTitle && !!t.title) || (t.showBio && !!t.bio);
   const showHd = t.showHeader && (showBn || showAv || hasText);
   // Photo on a side: photo and text sit next to each other and the text follows the photo's side.
-  const rowMode = showAv && L !== "hero" && (t.avatarPos !== "center" || L === "side");
+  const rowMode = showAv && (t.avatarPos !== "center" || L === "side");
   const nameOn = t.showName && !!t.name;
   const badge = t.verified ? <Verified color={t.verifiedColor} /> : null;
   const topNav = t.socialPos === "top" || t.socialPos === "both" ? nav() : null;
