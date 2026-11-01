@@ -22,6 +22,11 @@ async function load() {
   }
 }
 
+export async function generateViewport() {
+  const { t } = await load();
+  return { themeColor: t.bg };
+}
+
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await load();
   const desc = t.title || t.bio.split("\n")[0] || "All my links in one place.";
@@ -31,5 +36,5 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Home() {
   const { rows, t } = await load();
-  return <><Page rows={rows} t={t} /><Track /></>;
+  return <><style>{`html,body{background:${t.bg}}`}</style><Page rows={rows} t={t} /><Track /></>;
 }

@@ -64,7 +64,7 @@ export async function saveAll(p: { rows: Row[]; settings: Settings }) {
     return {
       kind: "card", title, url, type: r.type, body,
       icon: link && /^[a-z0-9]+$/.test(r.icon) ? r.icon : null, image: link && okImg(r.image) ? r.image : null,
-      width: r.size, position: i, visible: r.visible, uid: r.key.slice(0, 64), shortcutOf: null,
+      width: r.size, tall: r.tall, position: i, visible: r.visible, uid: r.key.slice(0, 64), shortcutOf: null,
       platform: link ? pl?.id ?? "custom" : null, handle: pl && pl.kind !== "url" ? r.handle.trim().slice(0, 200) : null,
       network: r.type === "wallet" ? (netById(r.network) ? r.network : "custom") : null,
       memo: r.type === "wallet" ? r.memo.trim().slice(0, 80) : null, qr: r.qr,

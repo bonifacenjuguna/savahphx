@@ -17,6 +17,7 @@ const toRow = (r: DbRow): Row => {
     size: r.width === "half" ? "half" : r.width === "third" ? "third" : "full",
     visible: r.visible, asIcon: !!r.asIcon, color: !!r.color,
     shape: (SHAPES.includes(r.shape ?? "") ? r.shape : "") as Row["shape"],
+    tall: r.tall === 2 || r.tall === 3 ? r.tall : 1,
   };
 };
 
@@ -42,5 +43,6 @@ export function cleanRow(x: unknown): Row {
     image: /^https:\/\//i.test(img) ? img : "", size: o.size === "half" || o.size === "third" ? o.size : "full",
     visible: o.visible !== false, asIcon: !!o.asIcon, color: !!o.color,
     shape: (SHAPES.includes(o.shape as string) ? o.shape : "") as Row["shape"],
+    tall: Number(o.tall) === 2 ? 2 : Number(o.tall) === 3 ? 3 : 1,
   };
 }

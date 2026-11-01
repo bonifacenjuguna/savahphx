@@ -23,6 +23,7 @@ export function ensureSchema() {
     await sql`ALTER TABLE links ADD COLUMN IF NOT EXISTS network text`;
     await sql`ALTER TABLE links ADD COLUMN IF NOT EXISTS memo text`;
     await sql`ALTER TABLE links ADD COLUMN IF NOT EXISTS qr boolean NOT NULL DEFAULT true`;
+    await sql`ALTER TABLE links ADD COLUMN IF NOT EXISTS tall integer NOT NULL DEFAULT 1`;
     await sql`CREATE TABLE IF NOT EXISTS events (
       id serial PRIMARY KEY, t text NOT NULL, k text, title text, v text NOT NULL, at timestamptz NOT NULL DEFAULT now(),
       country text, city text, device text, os text, browser text, ref text, lang text)`;

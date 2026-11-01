@@ -23,6 +23,7 @@ export const links = pgTable("links", {
   network: text("network"),
   memo: text("memo"),
   qr: boolean("qr").notNull().default(true),
+  tall: integer("tall").notNull().default(1), // card height: 1 | 2 | 3 rows
 });
 
 export const settings = pgTable("settings", {

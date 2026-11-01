@@ -7,6 +7,7 @@ import { CSS } from "@dnd-kit/utilities";
 import Page, { CardIcon, Chip, Ico, Mini, Powered } from "@/components/Page";
 import { NETS, NET_GROUPS, netById, shortAddr, walletWarn } from "@/lib/crypto";
 import { GROUPS, PLATFORMS, byId, resolveUrl, toHandle, type Platform } from "@/lib/platforms";
+import { themeFromImage } from "@/lib/palette";
 import { cleanRow } from "@/lib/rows";
 import {
   AVATAR_MOTIONS, BG_MOTIONS, BG_TYPES, CONTENT_KEYS, DEMO_LAYOUTS, DENSITIES, ENTRANCES, FONTS, HOVERS, LAYOUTS, PRESETS, RESET_GROUPS, STYLES,
@@ -19,7 +20,26 @@ import { Color, Field, Gl, ImgField, OptColor, Range, Seg, Sheet, Switch, Tgl, h
 
 type Err = { title?: string; link?: string; image?: string; dup?: string };
 type Panel = null | "profile" | "header" | "style" | "bg" | "icons" | "motion" | "footer" | "settings" | "stats";
-type Sub = null | "reset" | "layouts" | "backup" | "admin";
+type Sub = null | "reset" | "layouts" | "backup" | "admin" | "history";
+type U =
+  | { k: "s"; key: keyof Settings; from: unknown }
+  | { k: "link"; row: string; from: Partial<Row> }
+  | { k: "r"; row: string; f: keyof Row; from: unknown }
+  | { k: "add"; row: string }
+  | { k: "del"; row: Row; i: number }
+  | { k: "order"; keys: string[] };
+type Hist = { id: string; at: number; items: { id: string; group: string; label: string; from?: string; to?: string; u: U }[] };
+type Theme = "dark" | "light" | "auto";
+
+const PHOTO_LOOKS: { n: string; v: Partial<Settings> }[] = [
+  { n: "Natural", v: { bgDim: 35, bgBlur: 0, bgBright: 100, bgContrast: 100, bgSat: 100, bgHue: 0, bgVignette: 0 } },
+  { n: "Vivid", v: { bgDim: 28, bgBlur: 0, bgBright: 104, bgContrast: 112, bgSat: 140, bgHue: 0, bgVignette: 20 } },
+  { n: "Moody", v: { bgDim: 30, bgBlur: 0, bgBright: 80, bgContrast: 122, bgSat: 84, bgHue: 0, bgVignette: 50 } },
+  { n: "Soft", v: { bgDim: 22, bgBlur: 5, bgBright: 108, bgContrast: 90, bgSat: 92, bgHue: 0, bgVignette: 10 } },
+  { n: "Dreamy", v: { bgDim: 20, bgBlur: 14, bgBright: 108, bgContrast: 92, bgSat: 125, bgHue: 0, bgVignette: 25 } },
+  { n: "Cinema", v: { bgDim: 32, bgBlur: 0, bgBright: 90, bgContrast: 120, bgSat: 108, bgHue: 0, bgVignette: 58 } },
+  { n: "Mono", v: { bgDim: 35, bgBlur: 0, bgBright: 96, bgContrast: 116, bgSat: 0, bgHue: 0, bgVignette: 30 } },
+];
 
 const blank = (type: Row["type"] = "link"): Row => ({ ...emptyRow(), key: crypto.randomUUID(), type });
 
@@ -123,6 +143,9 @@ function LinkSheet({ r, t, e, tried, upd, onClose, del, dup, pick, pickNet }: { 
       <Field label="Card size" hint="Half cards pair up and thirds group in threes. A leftover one goes full width.">
         <Seg value={r.size} onChange={(v) => upd({ size: v })} options={[{ v: "full", l: "Wide" }, { v: "half", l: "Half" }, { v: "third", l: "Third" }]} />
       </Field>
+      <Field label="Card height" hint="Separate from width. Twice or thrice makes the card as tall as two or three cards.">
+        <Seg value={String(r.tall) as "1" | "2" | "3"} onChange={(v) => upd({ tall: Number(v) as Row["tall"] })} options={[{ v: "1", l: "Normal" }, { v: "2", l: "Twice" }, { v: "3", l: "Thrice" }] as const} />
+      </Field>
       <Switch on={r.visible} onChange={(v) => upd({ visible: v })} label="Show on my page" />
     </>
   );
@@ -223,6 +246,7 @@ function Item({ r, err, tried, open }: { r: Row; err?: Err; tried: boolean; open
           {r.type === "link" && r.asIcon && <i className="tag">Icon</i>}
           {!r.visible && <i className="tag">Hidden</i>}
           {r.size !== "full" && <i className="tag">{r.size === "half" ? "1/2" : "1/3"}</i>}
+          {r.tall > 1 && <i className="tag">{r.tall}x tall</i>}
         </span>
       </button>
     </div>
@@ -270,17 +294,26 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
   const [lname, setLname] = useState("");
   const [rs, setRs] = useState<Record<string, boolean>>({});
   const [replay, setReplay] = useState(0);
-  const [prefs, setPrefs] = useState({ accent: "#8ab4ff", compact: false });
+  const [prefs, setPrefs] = useState<{ accent: string; compact: boolean; theme: Theme }>({ accent: "#8ab4ff", compact: false, theme: "dark" });
+  const [hist, setHist] = useState<Hist[]>([]);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const say = (m: string, ok = false) => { setToast(m); setToastOk(ok); clearTimeout(timer.current); timer.current = setTimeout(() => setToast(""), ok ? 2600 : 3400); };
   useEffect(() => {
     try {
       const v = JSON.parse(localStorage.getItem("adm-prefs") || "{}");
-      setPrefs((p) => ({ accent: /^#[0-9a-f]{6}$/i.test(v.accent) ? v.accent : p.accent, compact: !!v.compact }));
+      setPrefs((p) => ({ accent: /^#[0-9a-f]{6}$/i.test(v.accent) ? v.accent : p.accent, compact: !!v.compact, theme: v.theme === "light" || v.theme === "auto" ? v.theme : "dark" }));
     } catch {}
+    try { const h = JSON.parse(localStorage.getItem("adm-hist") || "[]"); if (Array.isArray(h)) setHist(h.slice(0, 15)); } catch {}
   }, []);
   const setPref = (patch: Partial<typeof prefs>) => setPrefs((p) => { const n = { ...p, ...patch }; try { localStorage.setItem("adm-prefs", JSON.stringify(n)); } catch {} return n; });
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: light)");
+    const ap = () => { document.documentElement.dataset.adm = prefs.theme === "light" || (prefs.theme === "auto" && mq.matches) ? "light" : "dark"; };
+    ap();
+    mq.addEventListener("change", ap);
+    return () => { mq.removeEventListener("change", ap); delete document.documentElement.dataset.adm; };
+  }, [prefs.theme]);
   useEffect(() => {
     if (!dirty) return;
     const h = (e: BeforeUnloadEvent) => { e.preventDefault(); };
@@ -332,14 +365,22 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
       return;
     }
     start(async () => {
-      try { await saveAll({ rows, settings: s }); setBase(snap); setTried(false); say("Saved. Your site is live with your changes.", true); }
+      try { const ch = computeChanges(); await saveAll({ rows, settings: s }); setBase(snap); setTried(false); logHist(ch); say("Saved. Your site is live with your changes.", true); }
       catch { say("Could not save. Check your connection and try again."); }
     });
   };
   const fmtVal = (v: unknown) => (typeof v === "boolean" ? (v ? "On" : "Off") : v === "" || v == null ? "None" : String(v).length > 30 ? String(v).slice(0, 28) + "..." : String(v));
   const isHex = (v: unknown) => typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v);
-  const ROW_FIELDS: [keyof Row, string][] = [["title", "Title"], ["size", "Card size"], ["visible", "Shown on page"], ["asIcon", "In icon row"], ["color", "Colored logo"], ["shape", "Logo shape"], ["image", "Custom image"], ["body", "Text or address"], ["network", "Network"], ["memo", "Memo"], ["qr", "QR code"]];
-  type Change = { id: string; group: string; label: string; from?: string; to?: string; fromC?: string; toC?: string; undo: () => void };
+  const ROW_FIELDS: [keyof Row, string][] = [["title", "Title"], ["size", "Card width"], ["tall", "Card height"], ["visible", "Shown on page"], ["asIcon", "In icon row"], ["color", "Colored logo"], ["shape", "Logo shape"], ["image", "Custom image"], ["body", "Text or address"], ["network", "Network"], ["memo", "Memo"], ["qr", "QR code"]];
+  type Change = { id: string; group: string; label: string; from?: string; to?: string; fromC?: string; toC?: string; u: U };
+  const applyU = (u: U) => {
+    if (u.k === "s") setS((p) => ({ ...p, [u.key]: u.from }) as Settings);
+    else if (u.k === "link") setRows((x) => x.map((y) => (y.key === u.row ? { ...y, ...u.from } : y)));
+    else if (u.k === "r") setRows((x) => x.map((y) => (y.key === u.row ? ({ ...y, [u.f]: u.from } as Row) : y)));
+    else if (u.k === "add") setRows((x) => x.filter((y) => y.key !== u.row));
+    else if (u.k === "del") setRows((x) => { if (x.some((y) => y.key === u.row.key)) return x; const c = [...x]; c.splice(Math.min(u.i, c.length), 0, u.row); return c; });
+    else { const m = new Map(u.keys.map((k, i) => [k, i])); setRows((x) => [...x].sort((p, q) => (m.get(p.key) ?? 1e6) - (m.get(q.key) ?? 1e6))); }
+  };
   const computeChanges = (): Change[] => {
     const b = JSON.parse(base) as { rows: Row[]; s: Settings };
     const out: Change[] = [];
@@ -347,25 +388,38 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
     const cm = new Map(rows.map((r) => [r.key, r]));
     for (const r of rows) {
       const o = bm.get(r.key);
-      if (!o) { out.push({ id: "add-" + r.key, group: "Links", label: `Added "${r.title || "Untitled"}"`, undo: () => setRows((x) => x.filter((y) => y.key !== r.key)) }); continue; }
+      if (!o) { out.push({ id: "add-" + r.key, group: "Links", label: `Added "${r.title || "Untitled"}"`, u: { k: "add", row: r.key } }); continue; }
       const o0 = o.r, g = `Card: ${o0.title || "Untitled"}`;
       if (r.url !== o0.url || r.platform !== o0.platform || r.handle !== o0.handle || r.icon !== o0.icon)
-        out.push({ id: r.key + "-link", group: g, label: "Platform or link", from: fmtVal(o0.url || o0.platform), to: fmtVal(r.url || r.platform), undo: () => setRows((x) => x.map((y) => (y.key === r.key ? { ...y, url: o0.url, platform: o0.platform, handle: o0.handle, icon: o0.icon } : y))) });
+        out.push({ id: r.key + "-link", group: g, label: "Platform or link", from: fmtVal(o0.url || o0.platform), to: fmtVal(r.url || r.platform), u: { k: "link", row: r.key, from: { url: o0.url, platform: o0.platform, handle: o0.handle, icon: o0.icon } } });
       for (const [k, label] of ROW_FIELDS) if (r[k] !== o0[k])
-        out.push({ id: `${r.key}-${k}`, group: g, label, from: fmtVal(o0[k]), to: fmtVal(r[k]), undo: () => setRows((x) => x.map((y) => (y.key === r.key ? ({ ...y, [k]: o0[k] } as Row) : y))) });
+        out.push({ id: `${r.key}-${k}`, group: g, label, from: fmtVal(o0[k]), to: fmtVal(r[k]), u: { k: "r", row: r.key, f: k, from: o0[k] } });
     }
     for (const [key, o] of bm) if (!cm.has(key))
-      out.push({ id: "del-" + key, group: "Links", label: `Removed "${o.r.title || "Untitled"}"`, undo: () => setRows((x) => { const c = [...x]; c.splice(Math.min(o.i, c.length), 0, o.r); return c; }) });
-    const was = b.rows.filter((r) => cm.has(r.key)).map((r) => r.key).join();
-    const now = rows.filter((r) => bm.has(r.key)).map((r) => r.key).join();
-    if (was !== now) out.push({ id: "order", group: "Links", label: "Order of your cards", from: "Reordered", undo: () => setRows((x) => [...x].sort((p, q) => (bm.get(p.key)?.i ?? 1e6) - (bm.get(q.key)?.i ?? 1e6))) });
+      out.push({ id: "del-" + key, group: "Links", label: `Removed "${o.r.title || "Untitled"}"`, u: { k: "del", row: o.r, i: o.i } });
+    const was = b.rows.filter((r) => cm.has(r.key)).map((r) => r.key);
+    const now = rows.filter((r) => bm.has(r.key)).map((r) => r.key);
+    if (was.join() !== now.join()) out.push({ id: "order", group: "Links", label: "Order of your cards", from: "Reordered", u: { k: "order", keys: b.rows.map((r) => r.key) } });
     for (const k of Object.keys(s) as (keyof Settings)[]) if (JSON.stringify(s[k]) !== JSON.stringify(b.s[k]))
-      out.push({ id: "s-" + k, group: settingGroup(k), label: settingLabel(k), from: fmtVal(b.s[k]), to: fmtVal(s[k]), fromC: isHex(b.s[k]) ? String(b.s[k]) : undefined, toC: isHex(s[k]) ? String(s[k]) : undefined, undo: () => setS((p) => ({ ...p, [k]: b.s[k] }) as Settings) });
+      out.push({ id: "s-" + k, group: settingGroup(k), label: settingLabel(k), from: fmtVal(b.s[k]), to: fmtVal(s[k]), fromC: isHex(b.s[k]) ? String(b.s[k]) : undefined, toC: isHex(s[k]) ? String(s[k]) : undefined, u: { k: "s", key: k, from: b.s[k] } });
     return out;
   };
   const changes = dirty ? computeChanges() : [];
   const grouped = changes.reduce<Record<string, Change[]>>((a, c) => { (a[c.group] ||= []).push(c); return a; }, {});
   useEffect(() => { if (review && !dirty) setReview(false); }, [review, dirty]);
+  const logHist = (ch: Change[]) => {
+    if (!ch.length) return;
+    const e: Hist = { id: crypto.randomUUID(), at: Date.now(), items: ch.slice(0, 80).map((c) => ({ id: c.id, group: c.group, label: c.label, from: c.from, to: c.to, u: c.u })) };
+    setHist((h) => { const n = [e, ...h].slice(0, 15); try { localStorage.setItem("adm-hist", JSON.stringify(n)); } catch {} return n; });
+  };
+  const undoHist = (eid: string, iid?: string) => {
+    const e = hist.find((x) => x.id === eid);
+    if (!e) return;
+    const items = iid ? e.items.filter((i) => i.id === iid) : [...e.items].reverse();
+    items.forEach((i) => applyU(i.u));
+    setHist((h) => { const n = h.map((x) => (x.id === eid ? { ...x, items: iid ? x.items.filter((i) => i.id !== iid) : [] } : x)).filter((x) => x.items.length); try { localStorage.setItem("adm-hist", JSON.stringify(n)); } catch {} return n; });
+    say(iid ? "Change undone. Save changes to publish it." : "That save was undone. Save changes to publish it.");
+  };
   const discard = () => { const b = JSON.parse(base); setRows(b.rows); setS(b.s); setTried(false); setLinkKey(null); };
 
   const doReset = (ids: string[]) => {
@@ -384,8 +438,16 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
   };
   // Layouts change the look only. Your name, bio, photos and footer text always stay yours.
   const applyLayout = (l: Layout, withLinks: boolean) => {
-    setS((p) => normalize({ ...l.s, ...Object.fromEntries(CONTENT_KEYS.map((k) => [k, p[k]])) }));
+    const photo = l.id === "demo-photo";
+    const src = s.bgImage || s.banner || s.avatar;
+    setS((p) => normalize({ ...l.s, ...Object.fromEntries(CONTENT_KEYS.map((k) => [k, p[k]])), ...(photo ? { bgImage: p.bgImage || src, bgBlur: p.bgImage ? l.s.bgBlur : 20 } : {}) }));
     if (withLinks && l.rows) setRows(l.rows.map(cleanRow));
+    if (photo) {
+      if (!src) { setSub(null); say("Add a profile photo, banner or background image first, then apply Photo Theme again."); return; }
+      themeFromImage(src).then((patch) => { setS((p) => normalize({ ...p, ...patch })); say("Photo Theme applied. Colors were taken from your picture. Save changes to publish.", true); }).catch((e) => say(e instanceof Error ? e.message : "Could not read colors from the image."));
+      setSub(null);
+      return;
+    }
     setSub(null);
     say(withLinks ? "Applied the design and links. Save changes to publish." : "Applied the design. Your name, bio and photos were kept. Save changes to publish.");
   };
@@ -425,6 +487,10 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
     const h = new Date().getHours();
     setGreet(h < 5 ? "Burning the midnight oil" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening");
   }, []);
+  const matchColors = async () => {
+    try { const patch = await themeFromImage(s.bgImage); setS((p) => normalize({ ...p, ...patch })); say("Colors matched to your photo. Save changes to publish.", true); }
+    catch (e) { say(e instanceof Error ? e.message : "Could not read colors from the image."); }
+  };
   const copySite = async () => {
     try { await navigator.clipboard.writeText(window.location.origin); say("Site link copied"); } catch { say(window.location.origin); }
   };
@@ -501,13 +567,13 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
           <p className="mut">Everything below is not saved yet. Discard what you do not want, one change at a time.</p>
           {Object.entries(grouped).map(([g, items]) => (
             <section key={g} className="cg">
-              <div className="cgh"><b>{g}</b>{items.length > 1 && <button type="button" className="lnk" onClick={() => items.forEach((c) => c.undo())}>Discard all here</button>}</div>
+              <div className="cgh"><b>{g}</b>{items.length > 1 && <button type="button" className="lnk" onClick={() => items.forEach((c) => applyU(c.u))}>Discard all here</button>}</div>
               {items.map((c) => (
                 <div className="cl2" key={c.id}>
                   <span className="ct"><b>{c.label}</b>{(c.from !== undefined || c.to) && (
                     <small>{c.fromC && <i className="sw" style={{ background: c.fromC }} />}{c.from}{c.to ? " to " : ""}{c.toC && <i className="sw" style={{ background: c.toC }} />}{c.to}</small>
                   )}</span>
-                  <button type="button" className="btn sm" onClick={c.undo}>Discard</button>
+                  <button type="button" className="btn sm" onClick={() => applyU(c.u)}>Discard</button>
                 </div>
               ))}
             </section>
@@ -571,6 +637,7 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
           <Field label="Photo shape"><Seg value={s.avatarShape} onChange={(v) => set("avatarShape", v)} options={["circle", "rounded", "square"] as const} /></Field>
           <Range label="Photo size" value={s.avatarSize} min={64} max={200} unit="px" onChange={(v) => set("avatarSize", v)} />
           <Switch on={s.avatarGlow} onChange={(v) => set("avatarGlow", v)} label="Photo glow" />
+          {s.avatarGlow && <Range label="Glow strength" value={s.glowAmt} min={0} max={100} unit="%" onChange={(v) => set("glowAmt", v)} />}
         </Sheet>
       )}
 
@@ -615,12 +682,30 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
       {panel === "bg" && (
         <Sheet title="Background" onClose={close}>
           <Field label="Type"><Seg value={s.bgType} onChange={(v) => set("bgType", v)} options={BG_TYPES} /></Field>
+          {s.bgType === "image" && s.bgImage && <div className="hdfull" aria-label="Live preview of your page"><Page rows={rows.filter((r) => r.visible).slice(0, 4)} t={s} embedded /></div>}
           <div className="g2"><Color label="Base color" value={s.bg} onChange={(v) => set("bg", v)} /><Color label="Second color" value={s.bg2} onChange={(v) => set("bg2", v)} /></div>
           <ImgField label="Background image" value={s.bgImage} onChange={(v) => set("bgImage", v)} />
-          <Range label="Image dim" value={s.bgDim} min={0} max={90} unit="%" onChange={(v) => set("bgDim", v)} />
-          <Range label="Image blur" value={s.bgBlur} min={0} max={30} unit="px" onChange={(v) => set("bgBlur", v)} />
+          {s.bgType === "image" && s.bgImage && <>
+            <h3 className="gh">Photo look</h3>
+            <div className="pchips">
+              {PHOTO_LOOKS.map((p) => <button type="button" key={p.n} className="btn sm" onClick={() => setS((x) => normalize({ ...x, ...p.v }))}>{p.n}</button>)}
+            </div>
+            <Range label="Image dim" value={s.bgDim} min={0} max={90} unit="%" onChange={(v) => set("bgDim", v)} />
+            <Range label="Image blur" value={s.bgBlur} min={0} max={30} unit="px" onChange={(v) => set("bgBlur", v)} />
+            <Range label="Brightness" value={s.bgBright} min={40} max={160} unit="%" onChange={(v) => set("bgBright", v)} />
+            <Range label="Contrast" value={s.bgContrast} min={50} max={160} unit="%" onChange={(v) => set("bgContrast", v)} />
+            <Range label="Saturation" value={s.bgSat} min={0} max={220} unit="%" onChange={(v) => set("bgSat", v)} />
+            <Range label="Hue shift" value={s.bgHue} min={0} max={360} unit="deg" onChange={(v) => set("bgHue", v)} />
+            <Range label="Vignette" value={s.bgVignette} min={0} max={90} unit="%" onChange={(v) => set("bgVignette", v)} />
+            <div className="line2">
+              <button type="button" className="btn" onClick={() => setS((x) => normalize({ ...x, ...PHOTO_LOOKS[0].v }))}>Reset photo look</button>
+              <button type="button" className="btn pri" onClick={matchColors}>Match colors to photo</button>
+            </div>
+            <p className="mut">Match colors reads the main colors of this picture and sets your accents, text and card tint to suit it. You can still change any of them.</p>
+          </>}
+          {s.bgType === "image" && !s.bgImage && <p className="mut">Upload an image above to unlock the photo tools.</p>}
           <Field label="Background motion" hint="Slow movement for gradient and mesh backgrounds"><Seg value={s.bgMotion} onChange={(v) => set("bgMotion", v)} options={BG_MOTIONS} /></Field>
-          {s.style === "neu" && <p className="mut">Neumorphism uses a solid base color so the soft shadows work.</p>}
+          {s.style === "neu" && s.bgType !== "image" && <p className="mut">Neumorphism uses a solid base color so the soft shadows work.</p>}
         </Sheet>
       )}
 
@@ -692,7 +777,8 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
             ["layouts", "Saved layouts", "Save your design under a name and come back to it anytime"],
             ["reset", "Reset", "Choose what to reset, or reset all design"],
             ["backup", "Backup", "Export or import everything as a file"],
-            ["admin", "Admin look", "Accent color and compact lists for this dashboard"],
+            ["history", "Recent changes", "See what you saved lately and undo any change"],
+            ["admin", "Admin look", "Theme, accent color and compact lists for this dashboard"],
           ] as [Sub, string, string][]).map(([id, n, d]) => (
             <button type="button" key={id} className="mi" onClick={() => setSub(id)}><span><b>{n}</b><small>{d}</small></span><Gl n="chev" /></button>
           ))}
@@ -755,8 +841,27 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
         </Sheet>
       )}
 
+      {sub === "history" && (
+        <Sheet title="Recent changes" onClose={() => setSub(null)}>
+          <p className="mut">Every time you save, the changes are listed here on this device. Undo one change or a whole save, then press Save changes to publish the undo.</p>
+          {!hist.length && <p className="mut empty">Nothing yet. Changes you save will show up here.</p>}
+          {hist.map((e) => (
+            <section key={e.id} className="cg">
+              <div className="cgh"><b>{new Date(e.at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</b><button type="button" className="lnk" onClick={() => undoHist(e.id)}>Undo this whole save</button></div>
+              {e.items.map((c) => (
+                <div className="cl2" key={c.id}>
+                  <span className="ct"><b>{c.label}</b><small>{c.group}{c.from !== undefined || c.to ? ` · ${c.from ?? ""}${c.to ? " to " + c.to : ""}` : ""}</small></span>
+                  <button type="button" className="btn sm" onClick={() => undoHist(e.id, c.id)}>Undo</button>
+                </div>
+              ))}
+            </section>
+          ))}
+        </Sheet>
+      )}
+
       {sub === "admin" && (
         <Sheet title="Admin look" onClose={() => setSub(null)}>
+          <Field label="Theme" hint="Auto follows your phone or computer"><Seg value={prefs.theme} onChange={(v) => setPref({ theme: v })} options={[{ v: "dark", l: "Dark" }, { v: "light", l: "Light" }, { v: "auto", l: "Auto" }] as const} /></Field>
           <Field label="Dashboard accent">
             <div className="sws big">{ACCENTS.map((c) => <button type="button" key={c} aria-label={c} aria-pressed={prefs.accent === c} className={prefs.accent === c ? "on" : ""} style={{ background: c }} onClick={() => setPref({ accent: c })} />)}</div>
           </Field>

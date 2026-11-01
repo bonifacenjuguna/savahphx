@@ -1,4 +1,4 @@
-# Bio page + /admin (v3.6)
+# Bio page + /admin (v3.7)
 
 1. Vercel: import the repo, add Neon (Marketplace) and a Blob store (Storage tab).
 2. Env vars from `.env.example`: DATABASE_URL, ADMIN_PASSWORD, SESSION_SECRET, BLOB_READ_WRITE_TOKEN.
@@ -35,3 +35,13 @@ v3.2 adds text and crypto wallet cards (the `qrcode` package makes the QR codes,
 - **Profile panel:** reorganised into Name, Bio, Extra lines and Photos. New **Name size**, and every text has its own size and color.
 - **Verified checkmark:** optional badge beside your name (beside the bio if the name is hidden), with its own color.
 - **Header panel:** shows a live preview of the whole page (header, icon row and your first links) pinned at the top, so you see how everything below looks while you tune the photo.
+
+## v3.7
+- **Menus and dialogs:** the three-dots menu, text card and wallet dialogs now use the card's own surface and a text color that stays readable on it (no more white text on a light card).
+- **No dark flash when scrolling:** the page and its background now always use your theme color, including behind the browser bars on phones.
+- **Cleaner photo backgrounds:** neumorphism no longer throws white halos over a picture, the photo glow is softer (new Glow strength slider), the banner fades more gradually, and your name, bio and extra lines sit on a soft frosted plate so they stay readable on any picture.
+- **Background photo tools:** brightness, contrast, saturation, hue shift and vignette, one-tap looks (Natural, Vivid, Moody, Soft, Dreamy, Cinema, Mono), a live page preview, and **Match colors to photo**.
+- **Photo Theme (demo layout):** applies a frosted look and takes its colors from your picture (background image, or banner, or profile photo).
+- **Admin theme:** Dark, Light or Auto under Settings > Admin look.
+- **Recent changes:** Settings > Recent changes lists what you saved lately (kept on this device). Undo a single change or a whole save, then Save changes to publish it.
+- **Card height:** each card now has a separate Height (Normal, Twice, Thrice) next to its width. Twice and thrice cards take the space of two or three cards. A new `tall` column is added to the database automatically.

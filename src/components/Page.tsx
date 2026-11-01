@@ -19,6 +19,19 @@ const mixHex = (a: string, b: string, t: number) => {
 };
 const lum = (h: string) => { const [r, g, b] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)); return (0.299 * r + 0.587 * g + 0.114 * b) / 255; };
 
+// The card's own surface made opaque, plus a text color that stays readable on it. Used by menus and dialogs.
+function surfaceOf(t: Settings) {
+  const op = Math.min(0.92, Math.max(0.1, t.glassOpacity / 100 + 0.06));
+  const bg = t.style === "glass" ? mixHex(t.bg, t.glassTint, op)
+    : t.style === "flat" ? mixHex(t.bg, t.text, 0.09)
+    : t.style === "dark" ? mixHex(t.bg, t.text, 0.07)
+    : t.style === "mesh" ? mixHex(mixHex(t.bg, t.bg2, 0.35), t.text, 0.05)
+    : t.bg;
+  const want = t.cardColor || t.text;
+  const fg = Math.abs(lum(want) - lum(bg)) >= 0.42 ? want : lum(bg) > 0.55 ? "#111827" : "#f5f7ff";
+  return { bg, fg };
+}
+
 export const hasIcon = (r: Row) => { const p = byId(r.platform); return !!(r.image || r.icon || p?.slug || p?.svg); };
 const inkCard = (t: Settings) => (t.cardColor || t.text).slice(1);
 const inkIcon = (t: Settings) => (t.iconColor || t.text).slice(1);
@@ -26,13 +39,15 @@ const inkIcon = (t: Settings) => (t.iconColor || t.text).slice(1);
 export function cssVars(t: Settings) {
   const light = lum(t.bg) > 0.55;
   const d = DEN[t.density];
+  const sf = surfaceOf(t);
   return {
+    "--mbg": sf.bg, "--mfg": sf.fg, "--gl": t.avatarGlow ? t.glowAmt / 100 : 0,
     "--bg": t.bg, "--bg2": t.bg2, "--accent": t.accent, "--accent2": t.accent2, "--text": t.text, "--tint": t.glassTint,
     "--c-name": t.nameColor || t.text, "--c-title": t.titleColor || t.text, "--c-bio": t.bioColor || t.text,
     "--c-card": t.cardColor || t.text, "--c-foot": t.footerColor || t.text,
     "--nl": light ? "#ffffff" : mixHex(t.bg, "#ffffff", 0.09), "--nd": light ? mixHex(t.bg, "#000000", 0.18) : mixHex(t.bg, "#000000", 0.55),
     "--blur": `${t.glassBlur}px`, "--op": `${t.glassOpacity}%`, "--bd": `${t.glassBorder}%`, "--radius": `${t.radius}px`,
-    "--av": `${t.avatarSize}px`, "--avr": AVR[t.avatarShape], "--aj": J[t.avatarPos], "--al": t.align, "--jc": JC[t.align],
+    "--av": `${t.avatarSize}px`, "--avr": AVR[t.avatarShape], "--aj": J[t.avatarPos], "--al": t.align, "--tj": J[t.align], "--jc": JC[t.align],
     "--ns": `${t.nameSize}px`, "--ts": `${t.titleSize}px`, "--bs": `${t.bioSize}px`, "--up": t.upper ? "uppercase" : "none", "--soc": `${t.socialSize}px`,
     "--dim": t.bgType === "image" ? t.bgDim / 100 : 0, "--speed": t.speed, "--stg": `${t.stagger}ms`,
     "--bnh": `${t.bannerH}px`, "--bfit": t.bannerFit === "stretch" ? "fill" : "cover", "--gap": `${d.gap}px`, "--hg": `${d.hg}px`, "--pt": `${d.pt}px`, "--ha": `${d.ha}px`, "--cp": `${d.cp}px`,
@@ -102,6 +117,8 @@ export default function Page({ rows, t, embedded }: { rows: Row[]; t: Settings; 
   const cards = rows.filter((r) => r.visible);
   const eff = effSizes(cards);
   const icons = rows.filter((r) => r.type === "link" && r.asIcon && r.url);
+  const bgFilter = `blur(${t.bgBlur}px) brightness(${t.bgBright}%) contrast(${t.bgContrast}%) saturate(${t.bgSat}%) hue-rotate(${t.bgHue}deg)`;
+  const onImg = t.bgType === "image" && !!t.bgImage;
   const type = t.style === "neu" && t.bgType !== "image" ? "solid" : t.bgType;
   const bgImg =
     type === "gradient" ? `linear-gradient(160deg,${t.bg},${t.bg2})`
@@ -127,10 +144,11 @@ export default function Page({ rows, t, embedded }: { rows: Row[]; t: Settings; 
   const pw = t.poweredShow && !!(t.poweredName || t.poweredText || t.poweredLogo || t.poweredPlatform);
 
   return (
-    <div className={`pg${embedded ? " emb" : ""}${t.avatarGlow ? " glow" : ""}${pw && t.poweredPos !== "end" ? ` pwc pwc-${t.poweredSide}` : ""}`} data-style={t.style}
+    <div className={`pg${embedded ? " emb" : ""}${t.avatarGlow ? " glow" : ""}${pw && t.poweredPos !== "end" ? ` pwc pwc-${t.poweredSide}` : ""}`} data-style={t.style} data-bgi={onImg ? "on" : "off"}
       data-font={t.font} data-en={t.entrance ? t.entranceStyle : "none"} data-hv={t.hover ? t.hoverStyle : "none"} data-am={t.avatarMotion} data-apos={t.avatarPos} style={cssVars(t)}>
       <div className="bgfx" data-m={t.bgMotion} style={{ backgroundColor: t.bg, backgroundImage: bgImg }}>
-        {t.bgType === "image" && t.bgImage && <img className="bgi" src={t.bgImage} alt="" style={{ filter: `blur(${t.bgBlur}px)` }} />}
+        {t.bgType === "image" && t.bgImage && <img className="bgi" src={t.bgImage} alt="" style={{ filter: bgFilter }} />}
+        {onImg && t.bgVignette > 0 && <div className="vg" style={{ opacity: t.bgVignette / 100 }} />}
       </div>
       <main className={`wrap${showHd ? "" : " pt"}`}>
         {showHd ? (
@@ -152,10 +170,10 @@ export default function Page({ rows, t, embedded }: { rows: Row[]; t: Settings; 
 
         <section className="grid">
           {cards.map((c, i) =>
-            c.type === "text" ? <NoteCard key={c.key} r={c} cls={eff[i]} i={i} />
-            : c.type === "wallet" ? <WalletCard key={c.key} r={c} cls={eff[i]} i={i} />
+            c.type === "text" ? <NoteCard key={c.key} r={c} cls={`${eff[i]} t${c.tall}`} i={i} />
+            : c.type === "wallet" ? <WalletCard key={c.key} r={c} cls={`${eff[i]} t${c.tall}`} i={i} />
             : (
-              <div key={c.key} className={`card surf ${eff[i]}`} style={{ "--i": i } as React.CSSProperties}>
+              <div key={c.key} className={`card surf ${eff[i]} t${c.tall}`} style={{ "--i": i } as React.CSSProperties}>
                 <a className="cl" href={c.url} aria-label={c.title} data-tk={c.key} data-tt={c.title} {...ext(c.url)}>
                   <CardIcon r={c} t={t} />
                   <span className="tt">{c.title}</span>
