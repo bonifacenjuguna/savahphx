@@ -46,11 +46,12 @@ body{margin:0}
 .glow .av{box-shadow:0 0 0 calc(3px * var(--gl,.15)) color-mix(in srgb,var(--accent) calc(var(--gl,.15) * 35%),transparent),0 4px calc(20px * var(--gl,.15)) color-mix(in srgb,var(--accent) calc(var(--gl,.15) * 50%),transparent)}
 [data-style=neu] .av{box-shadow:4px 4px 10px var(--nd),-4px -4px 10px var(--nl)}
 
-/* banner: one clean fade into the page as it comes down */
-.bn{position:relative;z-index:0;overflow:hidden;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 55%,var(--bg2)),var(--bg2))}
-.bn img{display:block;width:100%;height:100%;object-fit:var(--bfit,cover)}
+/* banner: stays crisp and full strength, then fades cleanly into the page near the bottom (no haze, no glow) */
+.bn{--bm:linear-gradient(#000 0%,#000 46%,rgb(0 0 0 / .94) 54%,rgb(0 0 0 / .8) 62%,rgb(0 0 0 / .6) 71%,rgb(0 0 0 / .38) 80%,rgb(0 0 0 / .17) 90%,transparent 100%);position:relative;z-index:0;overflow:hidden;background:transparent}
+.bn:empty{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 55%,var(--bg2)),var(--bg2))}
+.bn img{display:block;width:100%;height:100%;object-fit:var(--bfit,cover);filter:none}
 .hd-banner .bn,.hd-side .bn{margin:0 -16px;height:var(--bnh,200px)}
-.hd-banner .bn,.hd-side .bn,.hd-card .bn,.hd-hero .bn{-webkit-mask-image:linear-gradient(#000 26%,rgb(0 0 0 / .92) 38%,rgb(0 0 0 / .74) 52%,rgb(0 0 0 / .48) 66%,rgb(0 0 0 / .22) 82%,transparent);mask-image:linear-gradient(#000 26%,rgb(0 0 0 / .92) 38%,rgb(0 0 0 / .74) 52%,rgb(0 0 0 / .48) 66%,rgb(0 0 0 / .22) 82%,transparent)}
+.hd-banner .bn,.hd-side .bn,.hd-card .bn,.hd-hero .bn{-webkit-mask-image:var(--bm);mask-image:var(--bm)}
 .hd .bn.nf{-webkit-mask-image:none;mask-image:none}
 .hd-banner .bn.nf,.hd-side .bn.nf{border-radius:0 0 var(--radius) var(--radius)}
 .lgf{display:block;width:100%;height:100%;opacity:.8}
