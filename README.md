@@ -1,4 +1,4 @@
-# Bio page + /admin (v3.8)
+# Bio page + /admin (v3.9)
 
 1. Vercel: import the repo, add Neon (Marketplace) and a Blob store (Storage tab).
 2. Env vars from `.env.example`: DATABASE_URL, ADMIN_PASSWORD, SESSION_SECRET, BLOB_READ_WRITE_TOKEN.
@@ -52,3 +52,9 @@ v3.2 adds text and crypto wallet cards (the `qrcode` package makes the QR codes,
 - **Photo on the left or right:** the photo now comes first and the details sit underneath on the same side (instead of beside it).
 - **Readable on photos without a plate:** on a photo background the whole profile gets a soft scrim and a faint text shadow instead of a frosted box.
 - The Bio size slider now scales the bio line relative to the name, so the name is always the strongest line.
+
+## v3.9
+- **Notification center:** a responsive bell appears on the public profile and links to a dedicated inbox. It checks for published updates, shows an unread count, and uses a gentle ringing animation only while unread notifications exist.
+- **Visitor inbox:** visitors can filter all/unread updates, expand formatted announcements, mark items read, mark all read, and remove items from their local inbox.
+- **Admin notification studio:** a dedicated Notifications workspace supports drafts, publishing, categories, pinned announcements, summaries, Markdown formatting, image uploads and live preview.
+- Notifications use a dedicated database table created automatically by the self-healing schema migration; existing profile data is preserved.
