@@ -48,7 +48,7 @@ export function cssVars(t: Settings) {
     "--nl": light ? "#ffffff" : mixHex(t.bg, "#ffffff", 0.09), "--nd": light ? mixHex(t.bg, "#000000", 0.18) : mixHex(t.bg, "#000000", 0.55),
     "--blur": `${t.glassBlur}px`, "--op": `${t.glassOpacity}%`, "--bd": `${t.glassBorder}%`, "--radius": `${t.radius}px`,
     "--av": `${t.avatarSize}px`, "--avr": AVR[t.avatarShape], "--aj": J[t.avatarPos], "--al": t.align, "--tj": J[t.align], "--jc": JC[t.align],
-    "--ns": `${t.nameSize}px`, "--ts": `${t.titleSize}px`, "--bs": `${t.bioSize}px`, "--up": t.upper ? "uppercase" : "none", "--soc": `${t.socialSize}px`,
+    "--ns": `${t.nameSize}px`, "--ts": `${t.titleSize}px`, "--bs": `${t.bioSize}px`, "--up": t.upper ? "uppercase" : "none", "--uls": t.upper ? ".06em" : "0", "--soc": `${t.socialSize}px`,
     "--dim": t.bgType === "image" ? t.bgDim / 100 : 0, "--speed": t.speed, "--stg": `${t.stagger}ms`,
     "--bnh": `${t.bannerH}px`, "--bfit": t.bannerFit === "stretch" ? "fill" : "cover", "--gap": `${d.gap}px`, "--hg": `${d.hg}px`, "--pt": `${d.pt}px`, "--ha": `${d.ha}px`, "--cp": `${d.cp}px`,
   } as React.CSSProperties;
@@ -138,6 +138,10 @@ export default function Page({ rows, t, embedded }: { rows: Row[]; t: Settings; 
   // Photo on a side: photo and text sit next to each other and the text follows the photo's side.
   const rowMode = showAv && (t.avatarPos !== "center" || L === "side");
   const nameOn = t.showName && !!t.name;
+  // Social-profile text: "@handle" on the first extra line sits right under the name, like X or Instagram; the rest stays as quiet details.
+  const lines = t.showBio ? t.bio.split("\n") : [];
+  const handle = /^@[\w.]{1,40}$/.test((lines[0] ?? "").trim()) ? lines[0].trim() : "";
+  const extra = (handle ? lines.slice(1) : lines).join("\n").trim();
   const badge = t.verified ? <Verified color={t.verifiedColor} /> : null;
   const topNav = t.socialPos === "top" || t.socialPos === "both" ? nav() : null;
   const botNav = t.socialPos === "bottom" || t.socialPos === "both" ? nav(true) : null;
@@ -152,15 +156,16 @@ export default function Page({ rows, t, embedded }: { rows: Row[]; t: Settings; 
       </div>
       <main className={`wrap${showHd ? "" : " pt"}`}>
         {showHd ? (
-          <header className={`hd hd-${L}${showAv ? "" : " noav"}${rowMode ? " row" : ""}${rowMode && showBn ? " ovl" : ""}`}>
+          <header className={`hd hd-${L}${L === "hero" ? "" : " pf"}${showAv ? "" : " noav"}${rowMode ? " row" : ""}${rowMode && showBn ? " ovl" : ""}`}>
             {showBn && <div className={`bn${t.bannerFade ? "" : " nf"}`}>{bn && <ZoomImg src={bn} />}</div>}
             <div className="sr">
               {showAv && (t.avatar ? <ZoomImg className="av" src={t.avatar} /> : <div className="av" />)}
               {hasText && (
                 <div className="tx">
                   {nameOn && <h2 className="nm"><span>{t.name}</span>{badge}</h2>}
+                  {handle && <p className="hdl">{handle}</p>}
                   {t.showTitle && t.title && (nameOn || !badge ? <h1>{t.title}</h1> : <h1 className="vb"><span>{t.title}</span>{badge}</h1>)}
-                  {t.showBio && t.bio && <p className="bio">{t.bio}</p>}
+                  {extra && <p className="bio">{extra}</p>}
                 </div>
               )}
             </div>
