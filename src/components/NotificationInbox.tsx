@@ -1,22 +1,9 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import NotificationRichText from "./NotificationRichText";
 
-type Notice = { id:number; title:string; excerpt:string|null; body:string; image:string|null; category:string; pinned:boolean; publishedAt:string|null };
+type Notice = { id:number; title:string; excerpt:string|null; body:string; image:string|null; category:string; pinned:boolean; publishedAt:string|Date|null };
 const READ = "savahphx-notification-read", DELETED = "savahphx-notification-deleted";
-function Inline({ text }: { text:string }) {
-  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
-  return <>{parts.map((p,i) => p.startsWith("**") ? <strong key={i}>{p.slice(2,-2)}</strong> : p.startsWith("*") ? <em key={i}>{p.slice(1,-1)}</em> : p)}</>;
-}
-function RichBody({ body }: { body:string }) {
-  return <div className="notice-rich">{body.split("\n").map((line,i) => {
-    if (line.startsWith("### ")) return <h3 key={i}><Inline text={line.slice(4)} /></h3>;
-    if (line.startsWith("## ")) return <h2 key={i}><Inline text={line.slice(3)} /></h2>;
-    if (line.startsWith("# ")) return <h2 key={i}><Inline text={line.slice(2)} /></h2>;
-    if (line.startsWith("- ") || line.startsWith("* ")) return <p className="notice-bullet" key={i}>• <Inline text={line.slice(2)} /></p>;
-    if (/^https:\/\//.test(line.trim())) return <p key={i}><a href={line.trim()} target="_blank" rel="noopener noreferrer">{line.trim()}</a></p>;
-    return line ? <p key={i}><Inline text={line} /></p> : <div className="notice-space" key={i} />;
-  })}</div>;
-}
 export default function NotificationInbox({ initial }: { initial:Notice[] }) {
   const [read,setRead] = useState<number[]>([]);
   const [deleted,setDeleted] = useState<number[]>([]);
@@ -38,7 +25,7 @@ export default function NotificationInbox({ initial }: { initial:Notice[] }) {
         <button className="notice-open" onClick={()=>{setExpanded(expanded===n.id?null:n.id);if(!read.includes(n.id))mark(n.id);}}>
           <span className="notice-symbol">{n.pinned?"✦":"●"}</span><span className="notice-summary"><span className="notice-meta">{n.category}{n.pinned?" · PINNED":""}</span><strong>{n.title}</strong><span>{n.excerpt||n.body.slice(0,140)}</span><small>{n.publishedAt?new Date(n.publishedAt).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}):""}</small></span><span className="notice-chevron">{expanded===n.id?"−":"+"}</span>
         </button>
-        {expanded===n.id&&<div className="notice-detail">{n.image&&<img src={n.image} alt="" /> }<RichBody body={n.body}/><div className="notice-actions"><button onClick={()=>mark(n.id)}>✓ Mark as read</button><button onClick={()=>remove(n.id)}>Delete from my inbox</button></div></div>}
+        {expanded===n.id&&<div className="notice-detail">{n.image&&<img src={n.image} alt="" /> }<NotificationRichText body={n.body}/><div className="notice-actions"><button onClick={()=>mark(n.id)}>✓ Mark as read</button><button onClick={()=>remove(n.id)}>Delete from my inbox</button></div></div>}
       </article>)}
     </section>
     <footer className="notice-footer"><a href="/">Back to profile</a></footer>
