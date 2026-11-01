@@ -4,6 +4,7 @@ import CardMenu from "./CardMenu";
 import { NoteCard, WalletCard } from "./Cards";
 import { LogoImg, LogoMask } from "./Logo";
 import ZoomImg from "./Zoom";
+import NotificationBell from "./NotificationBell";
 
 const J = { left: "start", center: "center", right: "end" } as const;
 const JC = { left: "flex-start", center: "center", right: "flex-end" } as const;
@@ -150,6 +151,7 @@ export default function Page({ rows, t, embedded }: { rows: Row[]; t: Settings; 
   return (
     <div className={`pg${embedded ? " emb" : ""}${t.avatarGlow ? " glow" : ""}${pw && t.poweredPos !== "end" ? ` pwc pwc-${t.poweredSide}` : ""}`} data-style={t.style} data-bgi={onImg ? "on" : "off"}
       data-font={t.font} data-en={t.entrance ? t.entranceStyle : "none"} data-hv={t.hover ? t.hoverStyle : "none"} data-am={t.avatarMotion} data-apos={t.avatarPos} style={cssVars(t)}>
+      <NotificationBell />
       <div className="bgfx" data-m={t.bgMotion} style={{ backgroundColor: t.bg, backgroundImage: bgImg }}>
         {t.bgType === "image" && t.bgImage && <img className="bgi" src={t.bgImage} alt="" style={{ filter: bgFilter }} />}
         {onImg && t.bgVignette > 0 && <div className="vg" style={{ opacity: t.bgVignette / 100 }} />}
