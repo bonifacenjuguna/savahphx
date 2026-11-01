@@ -60,3 +60,8 @@ v3.2 adds text and crypto wallet cards (the `qrcode` package makes the QR codes,
 
 ## v3.8.1
 - **Fixed a freeze in notifications:** posts that used **bold**, *italic* or other inline formatting (including the 3 sample posts) made the text formatter loop forever, which froze the page and made posts unclickable. Formatting now renders instantly everywhere.
+
+## v3.8.2
+- **Folded posts fixed:** a collapsed post (Read more) no longer breaks into narrow columns.
+- **Readable by default:** the Notifications page, name, bio, extra lines, footer, icons and cards now stay readable on any background. If your Text color is too close to the background, Auto text is corrected automatically, and the Style panel tells you. Applying a layout resets every text part to Auto.
+- **Minimal glow:** the photo glow and soft-UI shadows are much subtler (glow strength now starts at 15%, and existing sites are reset to it once).

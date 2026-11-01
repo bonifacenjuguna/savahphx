@@ -26,6 +26,9 @@ const shadowFor = (c: string) => lum(c) > 0.55
   ? "0 1px 2px rgb(0 0 0 / .45), 0 2px 16px rgb(0 0 0 / .4)"
   : "0 1px 2px rgb(255 255 255 / .55), 0 2px 14px rgb(255 255 255 / .5)";
 
+// Keeps a color if it is readable on the background, otherwise picks dark or light text.
+const readable = (c: string, bg: string) => (Math.abs(lum(c) - lum(bg)) >= 0.42 ? c : lum(bg) > 0.55 ? "#111827" : "#f5f7ff");
+
 // The card's own surface made opaque, plus a text color that stays readable on it. Used by menus and dialogs.
 function surfaceOf(t: Settings) {
   const op = Math.min(0.92, Math.max(0.1, t.glassOpacity / 100 + 0.06));
@@ -40,18 +43,24 @@ function surfaceOf(t: Settings) {
 }
 
 export const hasIcon = (r: Row) => { const p = byId(r.platform); return !!(r.image || r.icon || p?.slug || p?.svg); };
-const inkCard = (t: Settings) => (t.cardColor || t.text).slice(1);
-const inkIcon = (t: Settings) => (t.iconColor || t.text).slice(1);
+const inkCard = (t: Settings) => (t.cardColor || surfaceOf(t).fg).slice(1);
+const inkIcon = (t: Settings) => (t.iconColor || surfaceOf(t).fg).slice(1);
 
 export function cssVars(t: Settings) {
   const light = lum(t.bg) > 0.55;
   const d = DEN[t.density];
   const sf = surfaceOf(t);
+  // Text that sits straight on the page (or on a photo) follows your Text color, but never becomes unreadable on the background.
+  const free = t.bgType === "image" && !!t.bgImage;
+  const base = free || t.header === "hero" ? t.text : readable(t.text, t.bg);
+  const pfg = readable(t.text, t.bg);
+  const pac = Math.abs(lum(t.accent) - lum(t.bg)) >= 0.3 ? t.accent : mixHex(t.accent, pfg, 0.65);
   return {
-    "--tsn": shadowFor(t.nameColor || t.text), "--tst": shadowFor(t.titleColor || t.text), "--tsb": shadowFor(t.bioColor || t.text), "--mbg": sf.bg, "--mfg": sf.fg, "--gl": t.avatarGlow ? t.glowAmt / 100 : 0,
+    "--pfg": pfg, "--pac": pac,
+    "--tsn": shadowFor(t.nameColor || base), "--tst": shadowFor(t.titleColor || base), "--tsb": shadowFor(t.bioColor || base), "--mbg": sf.bg, "--mfg": sf.fg, "--gl": t.avatarGlow ? t.glowAmt / 100 : 0,
     "--bg": t.bg, "--bg2": t.bg2, "--accent": t.accent, "--accent2": t.accent2, "--text": t.text, "--tint": t.glassTint,
-    "--c-name": t.nameColor || t.text, "--c-title": t.titleColor || t.text, "--c-bio": t.bioColor || t.text,
-    "--c-card": t.cardColor || t.text, "--c-foot": t.footerColor || t.text,
+    "--c-name": t.nameColor || base, "--c-title": t.titleColor || base, "--c-bio": t.bioColor || base,
+    "--c-card": t.cardColor || sf.fg, "--c-foot": t.footerColor || base,
     "--nl": light ? "#ffffff" : mixHex(t.bg, "#ffffff", 0.09), "--nd": light ? mixHex(t.bg, "#000000", 0.18) : mixHex(t.bg, "#000000", 0.55),
     "--blur": `${t.glassBlur}px`, "--op": `${t.glassOpacity}%`, "--bd": `${t.glassBorder}%`, "--radius": `${t.radius}px`,
     "--av": `${t.avatarSize}px`, "--avr": AVR[t.avatarShape], "--aj": J[t.avatarPos], "--al": t.align, "--tj": J[t.align], "--jc": JC[t.align],

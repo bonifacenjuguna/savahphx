@@ -33,6 +33,8 @@ type U =
 type Hist = { id: string; at: number; items: { id: string; group: string; label: string; from?: string; to?: string; u: U }[] };
 type Theme = "dark" | "light" | "auto";
 
+const lumHex = (h: string) => { const n = parseInt(h.slice(1), 16); return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; };
+
 const PHOTO_LOOKS: { n: string; v: Partial<Settings> }[] = [
   { n: "Natural", v: { bgDim: 35, bgBlur: 0, bgBright: 100, bgContrast: 100, bgSat: 100, bgHue: 0, bgVignette: 0 } },
   { n: "Vivid", v: { bgDim: 28, bgBlur: 0, bgBright: 104, bgContrast: 112, bgSat: 140, bgHue: 0, bgVignette: 20 } },
@@ -675,7 +677,8 @@ export default function Editor({ initial, initialSettings, initialLayouts, initi
           <h3 className="gh">Text colors by part</h3>
           <OptColor label="Card text" value={s.cardColor} auto={s.text} onChange={(v) => set("cardColor", v)} />
           <OptColor label="Icon row logos" value={s.iconColor} auto={s.text} onChange={(v) => set("iconColor", v)} />
-          <p className="mut">Name, bio and extra lines are in Profile. Footer text is in Footer tag. Auto follows the Text color above.</p>
+          <p className="mut">Auto means "follow the Text color above" for the name, bio, extra lines, footer, icons and cards. Each part can still get its own color in Profile, Icon row and Footer tag. When a layout is applied, every part goes back to Auto.</p>
+          {Math.abs(lumHex(s.text) - lumHex(s.bg)) < 0.42 && !(s.bgType === "image" && s.bgImage) && <p className="mut warn">Your Text color is too close to the background color, so it is hard to read. Auto text is being corrected for you so nothing disappears, but pick a clearly lighter or darker Text color to fix it properly.</p>}
           <Range label="Corner radius" value={s.radius} min={0} max={40} unit="px" onChange={(v) => set("radius", v)} />
           {s.style === "glass" && <>
             <Range label="Glass blur" value={s.glassBlur} min={0} max={40} unit="px" onChange={(v) => set("glassBlur", v)} />

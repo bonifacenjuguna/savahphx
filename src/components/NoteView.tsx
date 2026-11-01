@@ -29,7 +29,7 @@ export default function NoteView({ n, unread, open = true, onToggle, children, i
           {rest.length > 0 && <div className={`rest c${Math.min(rest.length, 3)}`}>{rest.slice(0, 5).map((s) => <ZoomImg key={s} src={s} />)}</div>}
         </div>
       )}
-      {n.body.trim() && <div className={`nt-b${clamp ? " cl" : ""}`} onClick={onToggle}>{renderMd(n.body)}</div>}
+      {n.body.trim() && <div className={`nt-b${clamp ? " fold" : ""}`} onClick={onToggle}>{renderMd(n.body)}</div>}
       {long && onToggle && <button type="button" className="nt-more" onClick={onToggle}>{open ? "Show less" : "Read more"}</button>}
       {n.ctaLabel && n.ctaUrl && (
         <a className="nt-cta" href={n.ctaUrl} target={/^https?:/i.test(n.ctaUrl) ? "_blank" : undefined} rel="noopener noreferrer" data-tk={n.key || undefined} data-ta="noteclick" data-tt={n.title.slice(0, 60) || n.ctaLabel}>

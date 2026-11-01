@@ -291,3 +291,5 @@ html[data-adm=light] .adm .btn.pri,html[data-adm=light] .adm .pri{color:#06101f}
 .nsave{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;position:sticky;bottom:-16px;padding:12px 0 4px;background:linear-gradient(transparent,var(--sf) 38%)}
 .nsave .pri{flex:1 1 140px}
 .btn.danger{color:var(--k19)}.btn.danger.arm{background:var(--k19);color:#fff}
+
+.mut.warn{color:var(--k19);padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--k19) 12%,transparent)}
