@@ -10,8 +10,9 @@ const INLINE = /(\*\*(?!\s)[\s\S]+?\*\*)|(~~[\s\S]+?~~)|(==[\s\S]+?==)|(`[^`\n]+
 function inline(text: string, k: string): ReactNode[] {
   const out: ReactNode[] = [];
   let last = 0, i = 0, m: RegExpExecArray | null;
-  INLINE.lastIndex = 0;
-  while ((m = INLINE.exec(text))) {
+  // A fresh regex per call: nested calls (bold inside a line) must not share one cursor, or the outer loop never ends.
+  const re = new RegExp(INLINE.source, "g");
+  while ((m = re.exec(text))) {
     if (m.index > last) out.push(text.slice(last, m.index));
     const t = m[0], key = `${k}.${i++}`;
     if (m[1]) out.push(<strong key={key}>{inline(t.slice(2, -2), key)}</strong>);

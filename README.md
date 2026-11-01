@@ -57,3 +57,6 @@ v3.2 adds text and crypto wallet cards (the `qrcode` package makes the QR codes,
 - **Formatting:** toolbar and shortcuts for bold, italic, strikethrough, highlight, code, headings, bullet, numbered and task lists, quotes, links, dividers and Tip, Info and Warning boxes, plus emoji. A live preview shows exactly how it will look.
 - **Insights:** each post shows how many people saw it and how many tapped its button. These are kept out of your link statistics.
 - New `notes` table is created automatically. Drafts are never sent to visitors. Scheduled posts are only checked against the clock in the visitor's browser, so treat their text as not secret.
+
+## v3.8.1
+- **Fixed a freeze in notifications:** posts that used **bold**, *italic* or other inline formatting (including the 3 sample posts) made the text formatter loop forever, which froze the page and made posts unclickable. Formatting now renders instantly everywhere.
