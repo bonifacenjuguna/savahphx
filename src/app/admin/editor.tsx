@@ -535,6 +535,10 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
             <List rows={rows} errs={errs} tried={tried} setRows={setRows} open={setLinkKey} />
             {!rows.length && <p className="mut empty">Nothing here yet. Tap Add to start.</p>}
           </section>
+          <section className="panel notice-admin-card">
+            <div className="notice-admin-card-icon">♧</div><div><h2>Notifications</h2><p className="mut">Publish announcements, feature updates, image posts and formatted messages.</p></div>
+            <a className="btn pri" href="/admin/notifications">Open notification studio →</a>
+          </section>
           <section className="panel">
             <h2>Design</h2>
             <div className="tiles">

@@ -39,3 +39,17 @@ export const events = pgTable("events", {
   country: text("country"), city: text("city"), device: text("device"), os: text("os"),
   browser: text("browser"), ref: text("ref"), lang: text("lang"),
 });
+
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  excerpt: text("excerpt"),
+  body: text("body").notNull(),
+  image: text("image"),
+  category: text("category").notNull().default("Announcement"),
+  status: text("status").notNull().default("draft"),
+  pinned: boolean("pinned").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+});
