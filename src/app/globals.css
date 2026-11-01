@@ -272,6 +272,7 @@ body{margin:0}
 /* v3.9 notification bell and inbox */
 .notification-bell{position:fixed;z-index:35;top:calc(16px + env(safe-area-inset-top,0px));right:16px;width:48px;height:48px;display:grid;place-items:center;border-radius:17px;color:var(--text);background:var(--sbg);border:var(--sbd);box-shadow:var(--ssh);-webkit-backdrop-filter:var(--sbf);backdrop-filter:var(--sbf);text-decoration:none;transition:transform .2s,border-color .2s}
 .notification-bell:hover{transform:translateY(-2px);border-color:var(--accent)}
+.emb .notification-bell{position:absolute;top:12px;right:12px}
 .notification-bell svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transform-origin:50% 8%}
 .notification-bell.ringing svg{animation:notification-ring 1.9s ease-in-out infinite}
 .notification-count{position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;padding:0 5px;display:grid;place-items:center;border-radius:99px;background:#ef3340;color:white;border:2px solid var(--bg);font:700 10px/1 system-ui;box-shadow:0 2px 8px #0004}
