@@ -1,4 +1,4 @@
-# Bio page + /admin (v3.8)
+# Bio page + /admin (v3.7)
 
 1. Vercel: import the repo, add Neon (Marketplace) and a Blob store (Storage tab).
 2. Env vars from `.env.example`: DATABASE_URL, ADMIN_PASSWORD, SESSION_SECRET, BLOB_READ_WRITE_TOKEN.
@@ -46,9 +46,6 @@ v3.2 adds text and crypto wallet cards (the `qrcode` package makes the QR codes,
 - **Recent changes:** Settings > Recent changes lists what you saved lately (kept on this device). Undo a single change or a whole save, then Save changes to publish it.
 - **Card height:** each card now has a separate Height (Normal, Twice, Thrice) next to its width. Twice and thrice cards take the space of two or three cards. A new `tall` column is added to the database automatically.
 
-## v3.8
-- **Social-profile header (replaces the frosted card behind your name):** the name, bio and extra lines no longer sit in a box. The header now reads like X or Instagram: photo overlapping the banner with a cut-out ring, bold name with the verified badge, `@handle` in a muted line right under it, then your bio, any other extra lines, the icon row, and a hairline before your links.
-- **Handle detection:** if the first Extra line is a single `@handle`, it is shown directly under the name. Anything else stays below the bio as quiet details.
-- **Photo on the left or right:** the photo now comes first and the details sit underneath on the same side (instead of beside it).
-- **Readable on photos without a plate:** on a photo background the whole profile gets a soft scrim and a faint text shadow instead of a frosted box.
-- The Bio size slider now scales the bio line relative to the name, so the name is always the strongest line.
+## v3.7.1
+- **Profile block redesigned like a social profile:** name (bold, with the verified badge) and your extra lines (handle, UID...) sit beside the photo, and the bio goes underneath across the full width. The frosted card behind the text is gone; on photo backgrounds the text gets a soft outline instead. Text sizes are reset once to the new defaults (name 22, bio 16, extra lines 14), then adjustable as before.
+- Pull-to-refresh is no longer blocked.

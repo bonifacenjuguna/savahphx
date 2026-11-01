@@ -632,7 +632,7 @@ export default function Editor({ initial, initialSettings, initialLayouts }: { i
           <Range label="Banner height" value={s.bannerH} min={100} max={380} unit="px" onChange={(v) => set("bannerH", v)} />
           <Switch on={s.bannerFade} onChange={(v) => set("bannerFade", v)} label="Fade banner into the page" />
           <Field label="Spacing" hint="How close everything sits together"><Seg value={s.density} onChange={(v) => set("density", v)} options={DENSITIES} /></Field>
-          <Field label="Photo position" hint="Left or right gives a social-profile look: photo on that side, name, @handle and bio underneath."><Seg value={s.avatarPos} onChange={(v) => set("avatarPos", v)} options={["left", "center", "right"] as const} /></Field>
+          <Field label="Photo position" hint="Left or right puts your name and bio right beside the photo."><Seg value={s.avatarPos} onChange={(v) => set("avatarPos", v)} options={["left", "center", "right"] as const} /></Field>
           <Field label="Text alignment" hint={s.avatarPos === "center" ? "Used when the photo is centered." : "Not needed now: the text follows the photo's side."}><Seg value={s.align} onChange={(v) => set("align", v)} options={["left", "center", "right"] as const} /></Field>
           <Field label="Photo shape"><Seg value={s.avatarShape} onChange={(v) => set("avatarShape", v)} options={["circle", "rounded", "square"] as const} /></Field>
           <Range label="Photo size" value={s.avatarSize} min={64} max={200} unit="px" onChange={(v) => set("avatarSize", v)} />

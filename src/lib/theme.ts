@@ -14,7 +14,7 @@ export type Settings = {
   name: string; title: string; bio: string; avatar: string; banner: string; bannerFit: "cover" | "stretch"; bannerH: number; bannerFade: boolean;
   header: (typeof LAYOUTS)[number]; align: (typeof AL)[number];
   avatarShape: (typeof SH)[number]; avatarSize: number; avatarPos: (typeof AL)[number]; avatarGlow: boolean; glowAmt: number;
-  nameSize: number; titleSize: number; bioSize: number; verified: boolean; verifiedColor: string; upper: boolean; font: (typeof FONTS)[number]; density: (typeof DENSITIES)[number];
+  hdv: number; nameSize: number; titleSize: number; bioSize: number; verified: boolean; verifiedColor: string; upper: boolean; font: (typeof FONTS)[number]; density: (typeof DENSITIES)[number];
   socialPos: "top" | "bottom" | "both" | "off"; socialStyle: "plain" | "chip"; socialSize: number; iconShape: (typeof SH)[number];
   style: (typeof STYLE_IDS)[number];
   bgType: (typeof BG_TYPES)[number]; bg: string; bg2: string; bgImage: string; bgDim: number; bgBlur: number; bgBright: number; bgContrast: number; bgSat: number; bgHue: number; bgVignette: number;
@@ -32,7 +32,7 @@ export const defaultSettings: Settings = {
   name: "John Doe", title: "Creator and Developer", bio: "@johndoe", avatar: "", banner: "", bannerFit: "cover", bannerH: 200, bannerFade: true,
   header: "classic", align: "center",
   avatarShape: "circle", avatarSize: 112, avatarPos: "center", avatarGlow: true, glowAmt: 30,
-  nameSize: 16, titleSize: 26, bioSize: 15, verified: false, verifiedColor: "#1d9bf0", upper: false, font: "sora", density: "cozy",
+  hdv: 2, nameSize: 22, titleSize: 16, bioSize: 14, verified: false, verifiedColor: "#1d9bf0", upper: false, font: "sora", density: "cozy",
   socialPos: "top", socialStyle: "chip", socialSize: 46, iconShape: "circle",
   style: "glass",
   bgType: "mesh", bg: "#070910", bg2: "#1b1245", bgImage: "", bgDim: 45, bgBlur: 0, bgBright: 100, bgContrast: 100, bgSat: 100, bgHue: 0, bgVignette: 0,
@@ -112,8 +112,8 @@ export function normalize(raw: unknown): Settings {
     header: pick(r.header, LAYOUTS, d.header), align: pick(r.align, AL, d.align),
     avatarShape: pick(r.avatarShape, SH, d.avatarShape), avatarSize: num(r.avatarSize, 64, 200, d.avatarSize),
     avatarPos: pick(r.avatarPos, AL, d.avatarPos), avatarGlow: bool(r.avatarGlow, d.avatarGlow), glowAmt: num(r.glowAmt, 0, 100, d.glowAmt),
-    nameSize: num(r.nameSize, 11, 40, d.nameSize), verified: bool(r.verified, d.verified), verifiedColor: hex(r.verifiedColor, d.verifiedColor),
-    titleSize: num(r.titleSize, 14, 56, d.titleSize), bioSize: num(r.bioSize, 11, 24, d.bioSize),
+    hdv: 2, nameSize: Number(r.hdv) >= 2 ? num(r.nameSize, 11, 40, d.nameSize) : d.nameSize, verified: bool(r.verified, d.verified), verifiedColor: hex(r.verifiedColor, d.verifiedColor),
+    titleSize: Number(r.hdv) >= 2 ? num(r.titleSize, 14, 56, d.titleSize) : d.titleSize, bioSize: Number(r.hdv) >= 2 ? num(r.bioSize, 11, 24, d.bioSize) : d.bioSize,
     upper: bool(r.upper, d.upper), font: pick(r.font, FONTS, d.font), density: pick(r.density, DENSITIES, d.density),
     socialPos: pick(r.socialPos, ["top", "bottom", "both", "off"], d.socialPos),
     socialStyle: r.socialStyle === "plain" ? "plain" : "chip", socialSize: num(r.socialSize, 32, 72, d.socialSize),
