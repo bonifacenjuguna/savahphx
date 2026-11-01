@@ -65,6 +65,3 @@ v3.2 adds text and crypto wallet cards (the `qrcode` package makes the QR codes,
 - **Folded posts fixed:** a collapsed post (Read more) no longer breaks into narrow columns.
 - **Readable by default:** the Notifications page, name, bio, extra lines, footer, icons and cards now stay readable on any background. If your Text color is too close to the background, Auto text is corrected automatically, and the Style panel tells you. Applying a layout resets every text part to Auto.
 - **Minimal glow:** the photo glow and soft-UI shadows are much subtler (glow strength now starts at 15%, and existing sites are reset to it once).
-
-## v3.9.0
-- **Banner fade fixed:** the banner no longer looks blurry or glowing. It now stays sharp and at full strength through the top half, then fades smoothly into the page background near the bottom, like a normal profile cover. No tint or color bleeds through while it fades.
