@@ -29,6 +29,12 @@ export function ensureSchema() {
       country text, city text, device text, os text, browser text, ref text, lang text)`;
     await sql`CREATE INDEX IF NOT EXISTS events_at_idx ON events (at)`;
     await sql`CREATE INDEX IF NOT EXISTS events_k_idx ON events (k)`;
+    await sql`CREATE TABLE IF NOT EXISTS notifications (
+      id serial PRIMARY KEY, title text NOT NULL, excerpt text, body text NOT NULL, image text,
+      category text NOT NULL DEFAULT 'Announcement', status text NOT NULL DEFAULT 'draft',
+      pinned boolean NOT NULL DEFAULT false, created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now(), published_at timestamptz)`;
+    await sql`CREATE INDEX IF NOT EXISTS notifications_published_idx ON notifications (status, published_at DESC)`;
   })().catch((e) => {
     done = undefined; // retry on next request
     throw e;
