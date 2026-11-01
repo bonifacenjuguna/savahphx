@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Notice = { id:number; title:string; excerpt:string|null; body:string; image:string|null; category:string; pinned:boolean; publishedAt:string|null };
 const READ = "savahphx-notification-read", DELETED = "savahphx-notification-deleted";
@@ -18,8 +18,9 @@ function RichBody({ body }: { body:string }) {
   })}</div>;
 }
 export default function NotificationInbox({ initial }: { initial:Notice[] }) {
-  const [read,setRead] = useState<number[]>(() => { if(typeof window==="undefined") return []; try{return JSON.parse(localStorage.getItem(READ)||"[]");}catch{return [];} });
-  const [deleted,setDeleted] = useState<number[]>(() => { if(typeof window==="undefined") return []; try{return JSON.parse(localStorage.getItem(DELETED)||"[]");}catch{return [];} });
+  const [read,setRead] = useState<number[]>([]);
+  const [deleted,setDeleted] = useState<number[]>([]);
+  useEffect(() => { try { setRead(JSON.parse(localStorage.getItem(READ)||"[]")); setDeleted(JSON.parse(localStorage.getItem(DELETED)||"[]")); } catch {} }, []);
   const [filter,setFilter] = useState<"all"|"unread">("all");
   const [expanded,setExpanded] = useState<number|null>(null);
   const items = useMemo(()=>initial.filter(n=>!deleted.includes(n.id)).filter(n=>filter==="all"||!read.includes(n.id)),[initial,deleted,read,filter]);
