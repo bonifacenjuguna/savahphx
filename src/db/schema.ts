@@ -1,4 +1,5 @@
 import { boolean, integer, jsonb, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import type { Block } from "../lib/notifs";
 
 export const links = pgTable("links", {
   id: serial("id").primaryKey(),
@@ -26,26 +27,6 @@ export const links = pgTable("links", {
   tall: integer("tall").notNull().default(1), // card height: 1 | 2 | 3 rows
 });
 
-export const notes = pgTable("notes", {
-  id: serial("id").primaryKey(),
-  uid: text("uid").notNull(),
-  title: text("title").notNull().default(""),
-  body: text("body").notNull().default(""),
-  kind: text("kind").notNull().default("update"),
-  emoji: text("emoji").notNull().default(""),
-  images: jsonb("images").$type<string[]>().notNull().default([]),
-  ctaLabel: text("cta_label").notNull().default(""),
-  ctaUrl: text("cta_url").notNull().default(""),
-  accent: text("accent").notNull().default(""),
-  pinned: boolean("pinned").notNull().default(false),
-  popup: boolean("popup").notNull().default(false),
-  status: text("status").notNull().default("published"), // published | draft
-  publishAt: timestamp("publish_at", { withTimezone: true }),
-  expiresAt: timestamp("expires_at", { withTimezone: true }),
-  rev: timestamp("rev", { withTimezone: true }).notNull().defaultNow(), // moves forward when a post should show as new again
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
 export const settings = pgTable("settings", {
   id: integer("id").primaryKey(),
   data: jsonb("data").$type<Record<string, unknown>>().notNull(),
@@ -53,9 +34,31 @@ export const settings = pgTable("settings", {
 
 export const events = pgTable("events", {
   id: serial("id").primaryKey(),
-  t: text("t").notNull(), // view | click | icon | copy | copylink | open | share
+  t: text("t").notNull(), // view | click | icon | copy | copylink | open | share | nview | nclick
   k: text("k"), title: text("title"), v: text("v").notNull(),
   at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
   country: text("country"), city: text("city"), device: text("device"), os: text("os"),
   browser: text("browser"), ref: text("ref"), lang: text("lang"),
+});
+
+// Notifications you post from the dashboard. Visitors see the live ones behind the bell.
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  uid: text("uid").notNull().unique(),
+  title: text("title").notNull(),
+  summary: text("summary").notNull().default(""),
+  kind: text("kind").notNull().default("info"),
+  color: text("color"),
+  image: text("image"),
+  blocks: jsonb("blocks").$type<Block[]>().notNull().default([]),
+  cta: text("cta"),
+  ctaUrl: text("cta_url"),
+  pinned: boolean("pinned").notNull().default(false),
+  quiet: boolean("quiet").notNull().default(false),
+  status: text("status").notNull().default("published"), // published | draft
+  publishAt: timestamp("publish_at", { withTimezone: true }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  rev: integer("rev").notNull().default(1),
 });

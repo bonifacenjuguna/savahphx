@@ -7,6 +7,10 @@ export const HOVERS = ["lift", "glow", "scale", "tilt", "shine"] as const;
 export const AVATAR_MOTIONS = ["none", "float", "pulse", "ring"] as const;
 export const BG_MOTIONS = ["none", "drift", "aurora"] as const;
 export const DENSITIES = ["tight", "cozy", "roomy"] as const;
+export const BELL_SHOW = ["auto", "always", "off"] as const;
+export const BELL_POS = ["top-right", "top-left", "bottom-right", "bottom-left"] as const;
+export const BELL_STYLES = ["surface", "accent", "plain"] as const;
+export const BELL_MOTIONS = ["swing", "shake", "none"] as const;
 const AL = ["left", "center", "right"] as const;
 const SH = ["circle", "rounded", "square"] as const;
 
@@ -14,9 +18,7 @@ export type Settings = {
   name: string; title: string; bio: string; avatar: string; banner: string; bannerFit: "cover" | "stretch"; bannerH: number; bannerFade: boolean;
   header: (typeof LAYOUTS)[number]; align: (typeof AL)[number];
   avatarShape: (typeof SH)[number]; avatarSize: number; avatarPos: (typeof AL)[number]; avatarGlow: boolean; glowAmt: number;
-  bellOn: boolean; bellAlways: boolean; bellPos: (typeof BELL_POS)[number]; bellStyle: (typeof BELL_STYLES)[number]; bellSize: number;
-  bellColor: string; bellBg: string; bellBadge: "number" | "dot"; bellBadgeColor: string; bellSwing: boolean; bellEvery: number; bellTitle: string; bellEmpty: string;
-  hdv: number; nameSize: number; titleSize: number; bioSize: number; verified: boolean; verifiedColor: string; upper: boolean; font: (typeof FONTS)[number]; density: (typeof DENSITIES)[number];
+  nameSize: number; titleSize: number; bioSize: number; verified: boolean; verifiedColor: string; upper: boolean; font: (typeof FONTS)[number]; density: (typeof DENSITIES)[number];
   socialPos: "top" | "bottom" | "both" | "off"; socialStyle: "plain" | "chip"; socialSize: number; iconShape: (typeof SH)[number];
   style: (typeof STYLE_IDS)[number];
   bgType: (typeof BG_TYPES)[number]; bg: string; bg2: string; bgImage: string; bgDim: number; bgBlur: number; bgBright: number; bgContrast: number; bgSat: number; bgHue: number; bgVignette: number;
@@ -28,14 +30,15 @@ export type Settings = {
   showHeader: boolean; showAvatar: boolean; showBanner: boolean; showName: boolean; showTitle: boolean; showBio: boolean;
   poweredShow: boolean; poweredPos: "fixed" | "float" | "end"; poweredSide: "bottom" | "top" | "left" | "right"; poweredAlign: "start" | "center" | "end"; poweredText: string; poweredName: string; poweredUrl: string;
   poweredLogo: string; poweredPlatform: string; poweredColor: boolean;
+  bellShow: (typeof BELL_SHOW)[number]; bellPos: (typeof BELL_POS)[number]; bellStyle: (typeof BELL_STYLES)[number]; bellSize: number; bellColor: string;
+  badgeColor: string; bellBadge: "number" | "dot"; bellMotion: (typeof BELL_MOTIONS)[number]; bellEvery: number; bellLabel: string;
 };
 
 export const defaultSettings: Settings = {
   name: "John Doe", title: "Creator and Developer", bio: "@johndoe", avatar: "", banner: "", bannerFit: "cover", bannerH: 200, bannerFade: true,
   header: "classic", align: "center",
-  avatarShape: "circle", avatarSize: 112, avatarPos: "center", avatarGlow: true, glowAmt: 15,
-  bellOn: true, bellAlways: false, bellPos: "top-right", bellStyle: "auto", bellSize: 44, bellColor: "", bellBg: "", bellBadge: "number", bellBadgeColor: "#ff3b30", bellSwing: true, bellEvery: 8, bellTitle: "Notifications", bellEmpty: "You're all caught up.",
-  hdv: 3, nameSize: 22, titleSize: 16, bioSize: 14, verified: false, verifiedColor: "#1d9bf0", upper: false, font: "sora", density: "cozy",
+  avatarShape: "circle", avatarSize: 112, avatarPos: "center", avatarGlow: true, glowAmt: 30,
+  nameSize: 16, titleSize: 26, bioSize: 15, verified: false, verifiedColor: "#1d9bf0", upper: false, font: "sora", density: "cozy",
   socialPos: "top", socialStyle: "chip", socialSize: 46, iconShape: "circle",
   style: "glass",
   bgType: "mesh", bg: "#070910", bg2: "#1b1245", bgImage: "", bgDim: 45, bgBlur: 0, bgBright: 100, bgContrast: 100, bgSat: 100, bgHue: 0, bgVignette: 0,
@@ -45,10 +48,11 @@ export const defaultSettings: Settings = {
   showHeader: true, showAvatar: true, showBanner: true, showName: true, showTitle: true, showBio: true,
   poweredShow: true, poweredPos: "fixed", poweredSide: "bottom", poweredAlign: "center", poweredText: "Powered by", poweredName: "John Doe", poweredUrl: "https://example.com",
   poweredLogo: "", poweredPlatform: "", poweredColor: false,
+  bellShow: "auto", bellPos: "top-right", bellStyle: "surface", bellSize: 44, bellColor: "", badgeColor: "#ef4444", bellBadge: "number", bellMotion: "swing", bellEvery: 6, bellLabel: "Notifications",
 };
 
 // Your own words and images. Layouts and "reset all design" never touch these.
-export const CONTENT_KEYS: (keyof Settings)[] = ["name", "title", "bio", "avatar", "banner", "poweredText", "poweredName", "poweredUrl", "poweredLogo", "poweredPlatform", "bellTitle", "bellEmpty"];
+export const CONTENT_KEYS: (keyof Settings)[] = ["name", "title", "bio", "avatar", "banner", "poweredText", "poweredName", "poweredUrl", "poweredLogo", "poweredPlatform", "bellShow", "bellLabel"];
 
 export const STYLES: { id: Settings["style"]; name: string; v: Partial<Settings> }[] = [
   { id: "glass", name: "Glass", v: { bgType: "mesh", bg: "#070910", bg2: "#1b1245", accent: "#8ab4ff", accent2: "#c084fc", text: "#f5f7ff", radius: 22 } },
@@ -97,8 +101,6 @@ export function effSizes(cards: Row[]): Row["size"][] {
   return out;
 }
 
-export const BELL_POS = ["top-right", "top-left", "bottom-right", "bottom-left"] as const;
-export const BELL_STYLES = ["auto", "solid", "outline", "minimal"] as const;
 const pick = <T extends string>(v: unknown, list: readonly T[], d: T): T => (list.includes(v as T) ? (v as T) : d);
 const num = (v: unknown, lo: number, hi: number, d: number) => { const n = Number(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : d; };
 const hex = (v: unknown, d: string) => (typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v) ? v : d);
@@ -116,13 +118,9 @@ export function normalize(raw: unknown): Settings {
     bannerFit: r.bannerFit === "stretch" ? "stretch" : "cover", bannerH: num(r.bannerH, 100, 380, d.bannerH), bannerFade: bool(r.bannerFade, d.bannerFade),
     header: pick(r.header, LAYOUTS, d.header), align: pick(r.align, AL, d.align),
     avatarShape: pick(r.avatarShape, SH, d.avatarShape), avatarSize: num(r.avatarSize, 64, 200, d.avatarSize),
-    avatarPos: pick(r.avatarPos, AL, d.avatarPos), avatarGlow: bool(r.avatarGlow, d.avatarGlow), glowAmt: Number(r.hdv) >= 3 ? num(r.glowAmt, 0, 100, d.glowAmt) : d.glowAmt,
-    bellOn: bool(r.bellOn, d.bellOn), bellAlways: bool(r.bellAlways, d.bellAlways), bellPos: pick(r.bellPos, BELL_POS, d.bellPos), bellStyle: pick(r.bellStyle, BELL_STYLES, d.bellStyle),
-    bellSize: num(r.bellSize, 34, 64, d.bellSize), bellColor: r.bellColor === "" ? "" : hex(r.bellColor, ""), bellBg: r.bellBg === "" ? "" : hex(r.bellBg, ""),
-    bellBadge: r.bellBadge === "dot" ? "dot" : "number", bellBadgeColor: hex(r.bellBadgeColor, d.bellBadgeColor), bellSwing: bool(r.bellSwing, d.bellSwing), bellEvery: num(r.bellEvery, 4, 30, d.bellEvery),
-    bellTitle: str(r.bellTitle, d.bellTitle, 40), bellEmpty: str(r.bellEmpty, d.bellEmpty, 120),
-    hdv: 3, nameSize: Number(r.hdv) >= 2 ? num(r.nameSize, 11, 40, d.nameSize) : d.nameSize, verified: bool(r.verified, d.verified), verifiedColor: hex(r.verifiedColor, d.verifiedColor),
-    titleSize: Number(r.hdv) >= 2 ? num(r.titleSize, 14, 56, d.titleSize) : d.titleSize, bioSize: Number(r.hdv) >= 2 ? num(r.bioSize, 11, 24, d.bioSize) : d.bioSize,
+    avatarPos: pick(r.avatarPos, AL, d.avatarPos), avatarGlow: bool(r.avatarGlow, d.avatarGlow), glowAmt: num(r.glowAmt, 0, 100, d.glowAmt),
+    nameSize: num(r.nameSize, 11, 40, d.nameSize), verified: bool(r.verified, d.verified), verifiedColor: hex(r.verifiedColor, d.verifiedColor),
+    titleSize: num(r.titleSize, 14, 56, d.titleSize), bioSize: num(r.bioSize, 11, 24, d.bioSize),
     upper: bool(r.upper, d.upper), font: pick(r.font, FONTS, d.font), density: pick(r.density, DENSITIES, d.density),
     socialPos: pick(r.socialPos, ["top", "bottom", "both", "off"], d.socialPos),
     socialStyle: r.socialStyle === "plain" ? "plain" : "chip", socialSize: num(r.socialSize, 32, 72, d.socialSize),
@@ -148,6 +146,10 @@ export function normalize(raw: unknown): Settings {
     poweredText: str(r.poweredText, d.poweredText, 40), poweredName: str(r.poweredName, d.poweredName, 40),
     poweredUrl: img(r.poweredUrl), poweredLogo: img(r.poweredLogo),
     poweredPlatform: str(r.poweredPlatform, "", 30).replace(/[^a-z0-9-]/g, ""), poweredColor: bool(r.poweredColor, false),
+    bellShow: pick(r.bellShow, BELL_SHOW, d.bellShow), bellPos: pick(r.bellPos, BELL_POS, d.bellPos), bellStyle: pick(r.bellStyle, BELL_STYLES, d.bellStyle),
+    bellSize: Math.round(num(r.bellSize, 34, 68, d.bellSize)), bellColor: hex(r.bellColor, ""), badgeColor: hex(r.badgeColor, d.badgeColor),
+    bellBadge: r.bellBadge === "dot" ? "dot" : "number", bellMotion: pick(r.bellMotion, BELL_MOTIONS, d.bellMotion),
+    bellEvery: Math.round(num(r.bellEvery, 2, 30, d.bellEvery)), bellLabel: str(r.bellLabel, d.bellLabel, 30).trim() || d.bellLabel,
   };
 }
 
@@ -159,21 +161,21 @@ export const RESET_GROUPS: { id: string; name: string; content?: boolean; keys: 
   { id: "bg", name: "Background", keys: ["bgType", "bg", "bg2", "bgImage", "bgDim", "bgBlur", "bgBright", "bgContrast", "bgSat", "bgHue", "bgVignette"] },
   { id: "icons", name: "Icon row", keys: ["socialPos", "socialStyle", "socialSize", "iconShape"] },
   { id: "motion", name: "Motion", keys: ["entrance", "hover", "entranceStyle", "hoverStyle", "avatarMotion", "bgMotion", "speed", "stagger"] },
+  { id: "bell", name: "Notification bell", keys: ["bellPos", "bellStyle", "bellSize", "bellColor", "badgeColor", "bellBadge", "bellMotion", "bellEvery"] },
+  { id: "notif", name: "Bell visibility and title", content: true, keys: ["bellShow", "bellLabel"] },
   { id: "footer", name: "Footer tag", content: true, keys: ["poweredShow", "poweredPos", "poweredSide", "poweredAlign", "poweredText", "poweredName", "poweredUrl", "poweredLogo", "poweredPlatform", "poweredColor", "footerColor"] },
-  { id: "bell", name: "Notification bell", keys: ["bellOn", "bellAlways", "bellPos", "bellStyle", "bellSize", "bellColor", "bellBg", "bellBadge", "bellBadgeColor", "bellSwing", "bellEvery"] },
 ];
 
 export type Layout = { id: string; name: string; at: number; s: Settings; rows?: Row[] };
 
-// Every demo layout comes with the notification bell switched on and visible, styled to suit it.
-const D = (o: Partial<Settings>): Settings => ({ ...defaultSettings, bellAlways: true, ...o });
+const D = (o: Partial<Settings>): Settings => ({ ...defaultSettings, ...o });
 export const DEMO_LAYOUTS: Layout[] = [
-  { id: "demo-neon", name: "Neon Night", at: 0, s: D({ bellStyle: "solid", bellPos: "top-right", style: "mesh", header: "banner", bgType: "mesh", bg: "#0b0420", bg2: "#3b0a5c", accent: "#ff5fa2", accent2: "#38bdf8", text: "#ffffff", radius: 26, font: "space", iconShape: "rounded", entranceStyle: "zoom", hoverStyle: "glow", bgMotion: "drift", avatarMotion: "pulse" }) },
-  { id: "demo-frost", name: "Clean Frost", at: 0, s: D({ bellStyle: "outline", style: "flat", header: "classic", bgType: "solid", bg: "#f4f6fb", text: "#111827", accent: "#2563eb", radius: 14, avatarShape: "rounded", font: "inter", avatarGlow: false, entranceStyle: "fade", hoverStyle: "scale" }) },
-  { id: "demo-clay", name: "Soft Clay", at: 0, s: D({ style: "neu", header: "card", bgType: "solid", bg: "#e6e9ef", text: "#3b4252", accent: "#5b7cfa", radius: 28, font: "dm", avatarGlow: false, hoverStyle: "scale", density: "roomy" }) },
-  { id: "demo-poster", name: "Poster Hero", at: 0, s: D({ bellStyle: "minimal", style: "dark", header: "hero", bgType: "gradient", bg: "#050505", bg2: "#14141c", accent: "#f5d90a", text: "#f4f4f5", radius: 14, font: "playfair", entranceStyle: "blur", hoverStyle: "shine", bgMotion: "aurora" }) },
-  { id: "demo-photo", name: "Photo Theme", at: 0, s: D({ style: "glass", header: "banner", bgType: "image", bgDim: 28, bgBlur: 0, bgBright: 96, bgContrast: 108, bgSat: 112, bgVignette: 42, glassBlur: 30, glassOpacity: 20, glassBorder: 24, radius: 24, font: "sora", entranceStyle: "rise", hoverStyle: "lift", avatarGlow: true, glowAmt: 14, density: "cozy" }) },
-  { id: "demo-side", name: "Side Profile", at: 0, s: D({ bellStyle: "outline", bellPos: "top-right", style: "glass", header: "side", align: "left", avatarPos: "left", avatarShape: "rounded", upper: false, socialPos: "bottom", entranceStyle: "slide", hoverStyle: "tilt", avatarMotion: "float" }) },
+  { id: "demo-neon", name: "Neon Night", at: 0, s: D({ style: "mesh", header: "banner", bgType: "mesh", bg: "#0b0420", bg2: "#3b0a5c", accent: "#ff5fa2", accent2: "#38bdf8", text: "#ffffff", radius: 26, font: "space", iconShape: "rounded", entranceStyle: "zoom", hoverStyle: "glow", bgMotion: "drift", avatarMotion: "pulse", bellStyle: "accent", bellPos: "top-right", bellMotion: "swing", bellEvery: 5, badgeColor: "#ff2d6f" }) },
+  { id: "demo-frost", name: "Clean Frost", at: 0, s: D({ style: "flat", header: "classic", bgType: "solid", bg: "#f4f6fb", text: "#111827", accent: "#2563eb", radius: 14, avatarShape: "rounded", font: "inter", avatarGlow: false, entranceStyle: "fade", hoverStyle: "scale", bellStyle: "surface", bellPos: "top-right", bellMotion: "shake", bellEvery: 8, badgeColor: "#ef4444" }) },
+  { id: "demo-clay", name: "Soft Clay", at: 0, s: D({ style: "neu", header: "card", bgType: "solid", bg: "#e6e9ef", text: "#3b4252", accent: "#5b7cfa", radius: 28, font: "dm", avatarGlow: false, hoverStyle: "scale", density: "roomy", bellStyle: "surface", bellSize: 48, bellPos: "top-right", bellMotion: "swing", bellEvery: 7, badgeColor: "#5b7cfa" }) },
+  { id: "demo-poster", name: "Poster Hero", at: 0, s: D({ style: "dark", header: "hero", bgType: "gradient", bg: "#050505", bg2: "#14141c", accent: "#f5d90a", text: "#f4f4f5", radius: 14, font: "playfair", entranceStyle: "blur", hoverStyle: "shine", bgMotion: "aurora", bellStyle: "plain", bellPos: "top-left", bellMotion: "swing", bellEvery: 6, bellColor: "#f5d90a", badgeColor: "#f5d90a", bellBadge: "dot" }) },
+  { id: "demo-photo", name: "Photo Theme", at: 0, s: D({ style: "glass", header: "banner", bgType: "image", bgDim: 28, bgBlur: 0, bgBright: 96, bgContrast: 108, bgSat: 112, bgVignette: 42, glassBlur: 30, glassOpacity: 20, glassBorder: 24, radius: 24, font: "sora", entranceStyle: "rise", hoverStyle: "lift", avatarGlow: true, glowAmt: 22, density: "cozy", bellStyle: "surface", bellPos: "top-right", bellMotion: "swing", bellEvery: 6 }) },
+  { id: "demo-side", name: "Side Profile", at: 0, s: D({ style: "glass", header: "side", align: "left", avatarPos: "left", avatarShape: "rounded", upper: false, socialPos: "bottom", entranceStyle: "slide", hoverStyle: "tilt", avatarMotion: "float", bellStyle: "accent", bellPos: "top-right", bellMotion: "shake", bellEvery: 5 }) },
 ];
 
 const NAMES: Partial<Record<keyof Settings, string>> = {
@@ -181,7 +183,8 @@ const NAMES: Partial<Record<keyof Settings, string>> = {
   entrance: "Entrance animation", hover: "Hover effect", socialPos: "Icon row placement", poweredUrl: "Footer link", poweredPos: "Footer style",
   poweredSide: "Footer edge", poweredAlign: "Footer alignment", poweredShow: "Footer tag", avatar: "Profile photo", banner: "Banner image",
   bgImage: "Background image", glassTint: "Surface tint", upper: "Uppercase bio", density: "Spacing", header: "Header layout", iconShape: "Icon shape",
-  nameSize: "Name size", titleSize: "Bio size", bioSize: "Extra line size", verified: "Verified checkmark", verifiedColor: "Checkmark color", nameColor: "Name color", titleColor: "Bio color", bioColor: "Extra lines color", bellOn: "Notification bell", bellAlways: "Show bell with no posts", bellPos: "Bell position", bellStyle: "Bell style", bellSize: "Bell size", bellColor: "Bell icon color", bellBg: "Bell color", bellBadge: "Bell badge", bellBadgeColor: "Badge color", bellSwing: "Bell ring", bellEvery: "Ring every", bellTitle: "Notifications title", bellEmpty: "Notifications empty text", glowAmt: "Photo glow strength", bgBright: "Brightness", bgContrast: "Contrast", bgSat: "Saturation", bgHue: "Hue shift", bgVignette: "Vignette", bgDim: "Image dim", bgBlur: "Image blur", bannerFit: "Banner fit", bannerH: "Banner height", bannerFade: "Banner fade", speed: "Animation speed", stagger: "Delay between cards",
+  nameSize: "Name size", titleSize: "Bio size", bioSize: "Extra line size", verified: "Verified checkmark", verifiedColor: "Checkmark color", nameColor: "Name color", titleColor: "Bio color", bioColor: "Extra lines color", glowAmt: "Photo glow strength", bgBright: "Brightness", bgContrast: "Contrast", bgSat: "Saturation", bgHue: "Hue shift", bgVignette: "Vignette", bgDim: "Image dim", bgBlur: "Image blur", bannerFit: "Banner fit", bannerH: "Banner height", bannerFade: "Banner fade", speed: "Animation speed", stagger: "Delay between cards",
+  bellShow: "Bell visibility", bellPos: "Bell position", bellStyle: "Bell style", bellSize: "Bell size", bellColor: "Bell icon color", badgeColor: "Badge color", bellBadge: "Badge look", bellMotion: "Bell motion", bellEvery: "Quiet time between rings", bellLabel: "Notifications title",
 };
 export const settingLabel = (k: keyof Settings) => NAMES[k] ?? k.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
 export const settingGroup = (k: keyof Settings) => RESET_GROUPS.find((g) => g.keys.includes(k))?.name ?? "Other";

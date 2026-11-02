@@ -1,4 +1,4 @@
-# Bio page + /admin (v3.7)
+# Bio page + /admin (v3.9)
 
 1. Vercel: import the repo, add Neon (Marketplace) and a Blob store (Storage tab).
 2. Env vars from `.env.example`: DATABASE_URL, ADMIN_PASSWORD, SESSION_SECRET, BLOB_READ_WRITE_TOKEN.
@@ -46,22 +46,18 @@ v3.2 adds text and crypto wallet cards (the `qrcode` package makes the QR codes,
 - **Recent changes:** Settings > Recent changes lists what you saved lately (kept on this device). Undo a single change or a whole save, then Save changes to publish it.
 - **Card height:** each card now has a separate Height (Normal, Twice, Thrice) next to its width. Twice and thrice cards take the space of two or three cards. A new `tall` column is added to the database automatically.
 
-## v3.7.1
-- **Profile block redesigned like a social profile:** name (bold, with the verified badge) and your extra lines (handle, UID...) sit beside the photo, and the bio goes underneath across the full width. The frosted card behind the text is gone; on photo backgrounds the text gets a soft outline instead. Text sizes are reset once to the new defaults (name 22, bio 16, extra lines 14), then adjustable as before.
-- Pull-to-refresh is no longer blocked.
+## v3.8
+- **Social-profile header (replaces the frosted card behind your name):** the name, bio and extra lines no longer sit in a box. The header now reads like X or Instagram: photo overlapping the banner with a cut-out ring, bold name with the verified badge, `@handle` in a muted line right under it, then your bio, any other extra lines, the icon row, and a hairline before your links.
+- **Handle detection:** if the first Extra line is a single `@handle`, it is shown directly under the name. Anything else stays below the bio as quiet details.
+- **Photo on the left or right:** the photo now comes first and the details sit underneath on the same side (instead of beside it).
+- **Readable on photos without a plate:** on a photo background the whole profile gets a soft scrim and a faint text shadow instead of a frosted box.
+- The Bio size slider now scales the bio line relative to the name, so the name is always the strongest line.
 
-## v3.8: Notifications
-- **Bell:** a modern notification bell on your page. It rings for a second, rests, then rings again, only while something is unread, and shows a red number or dot. Position, style, size, colors, badge and ring timing are all adjustable (Notifications > Bell). It is switched on in every demo layout.
-- **Notifications page:** tapping the bell opens a full page with All and Unread tabs, mark as read or unread, mark all read, delete with undo, clear all, copy link to a post and read more on long posts. Read and deleted states are remembered per visitor, on their own device.
-- **Posts you write:** a new Notifications card in the dashboard. Each post has a type (Update, New, Offer, Important, Event, Info), title, formatted message, up to 6 images, an action button, accent color, pin, optional pop up for new visitors, schedule or draft, and automatic removal.
-- **Formatting:** toolbar and shortcuts for bold, italic, strikethrough, highlight, code, headings, bullet, numbered and task lists, quotes, links, dividers and Tip, Info and Warning boxes, plus emoji. A live preview shows exactly how it will look.
-- **Insights:** each post shows how many people saw it and how many tapped its button. These are kept out of your link statistics.
-- New `notes` table is created automatically. Drafts are never sent to visitors. Scheduled posts are only checked against the clock in the visitor's browser, so treat their text as not secret.
-
-## v3.8.1
-- **Fixed a freeze in notifications:** posts that used **bold**, *italic* or other inline formatting (including the 3 sample posts) made the text formatter loop forever, which froze the page and made posts unclickable. Formatting now renders instantly everywhere.
-
-## v3.8.2
-- **Folded posts fixed:** a collapsed post (Read more) no longer breaks into narrow columns.
-- **Readable by default:** the Notifications page, name, bio, extra lines, footer, icons and cards now stay readable on any background. If your Text color is too close to the background, Auto text is corrected automatically, and the Style panel tells you. Applying a layout resets every text part to Auto.
-- **Minimal glow:** the photo glow and soft-UI shadows are much subtler (glow strength now starts at 15%, and existing sites are reset to it once).
+## v3.9: Notifications and the bell
+- **Bell on your page:** a modern bell that swings for about a second, rests, then swings again, only while a visitor has something unread. A red badge (number or dot) shows how many. Tapping it opens a real page at `/notifications`.
+- **Notifications page:** All and Unread tabs, grouped by day, pinned posts first. Each notification has Mark as read / unread and Delete (with Undo), plus Mark all read and Clear all. Opening one shows the full post, and every post has its own link (`/notifications#its-id`). Read and delete marks are kept on the visitor's own device.
+- **Notifications card in the dashboard:** counts of live, scheduled and draft posts, how many people opened them, and a button to write and manage everything.
+- **Composer:** title, short preview, type (Info, Update, Offer, Event, News, Alert) with its own accent, cover picture, and a block builder: heading, text (bold, italic, strike, code, links), picture with caption, gallery, bullets, numbered list, quote, callout (info, good news, careful, important), button, copy box (promo codes), details table and divider. Blocks can be reordered, duplicated and deleted. Six templates to start from, a Write / Preview switch that uses your design, a main button, pin to top, quiet posts (never ring the bell), scheduled start, automatic hide time, Save draft, Unpublish, Duplicate, **Notify again** (shows it as new to everyone) and per-post stats (people who opened it, button taps).
+- **Posting is immediate** and does not wait for Save changes. The bell settings (Design > Bell) are part of your design and do wait for Save changes.
+- **Bell design:** position (4 corners), style (match cards, accent, plain), size, icon and badge colors, number or dot, swing or shake, and the quiet time between rings. Every demo layout now includes a bell tuned to its look. Layouts keep your own bell visibility and title.
+- New database table `notifications` is created automatically. Stats for notifications use the existing `events` table and never mix with your link stats.
