@@ -1,11 +1,11 @@
 import { byId, svgUri } from "@/lib/platforms";
-import type { Notif } from "@/lib/notifs";
 import { effSizes, emptyRow, logoUrl, type Row, type Settings } from "@/lib/theme";
-import Bell from "./Bell";
 import CardMenu from "./CardMenu";
 import { NoteCard, WalletCard } from "./Cards";
 import { LogoImg, LogoMask } from "./Logo";
 import ZoomImg from "./Zoom";
+import Bell from "./Bell";
+import type { Note } from "@/lib/notes";
 
 const J = { left: "start", center: "center", right: "end" } as const;
 const JC = { left: "flex-start", center: "center", right: "flex-end" } as const;
@@ -21,6 +21,14 @@ const mixHex = (a: string, b: string, t: number) => {
 };
 const lum = (h: string) => { const [r, g, b] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)); return (0.299 * r + 0.587 * g + 0.114 * b) / 255; };
 
+// Soft outline that keeps text readable when it sits straight on a photo.
+const shadowFor = (c: string) => lum(c) > 0.55
+  ? "0 1px 2px rgb(0 0 0 / .45), 0 2px 16px rgb(0 0 0 / .4)"
+  : "0 1px 2px rgb(255 255 255 / .55), 0 2px 14px rgb(255 255 255 / .5)";
+
+// Keeps a color if it is readable on the background, otherwise picks dark or light text.
+const readable = (c: string, bg: string) => (Math.abs(lum(c) - lum(bg)) >= 0.42 ? c : lum(bg) > 0.55 ? "#111827" : "#f5f7ff");
+
 // The card's own surface made opaque, plus a text color that stays readable on it. Used by menus and dialogs.
 function surfaceOf(t: Settings) {
   const op = Math.min(0.92, Math.max(0.1, t.glassOpacity / 100 + 0.06));
@@ -35,25 +43,30 @@ function surfaceOf(t: Settings) {
 }
 
 export const hasIcon = (r: Row) => { const p = byId(r.platform); return !!(r.image || r.icon || p?.slug || p?.svg); };
-const inkCard = (t: Settings) => (t.cardColor || t.text).slice(1);
-const inkIcon = (t: Settings) => (t.iconColor || t.text).slice(1);
+const inkCard = (t: Settings) => (t.cardColor || surfaceOf(t).fg).slice(1);
+const inkIcon = (t: Settings) => (t.iconColor || surfaceOf(t).fg).slice(1);
 
 export function cssVars(t: Settings) {
   const light = lum(t.bg) > 0.55;
   const d = DEN[t.density];
   const sf = surfaceOf(t);
+  // Text that sits straight on the page (or on a photo) follows your Text color, but never becomes unreadable on the background.
+  const free = t.bgType === "image" && !!t.bgImage;
+  const base = free || t.header === "hero" ? t.text : readable(t.text, t.bg);
+  const pfg = readable(t.text, t.bg);
+  const pac = Math.abs(lum(t.accent) - lum(t.bg)) >= 0.3 ? t.accent : mixHex(t.accent, pfg, 0.65);
   return {
-    "--mbg": sf.bg, "--mfg": sf.fg, "--gl": t.avatarGlow ? t.glowAmt / 100 : 0,
+    "--pfg": pfg, "--pac": pac,
+    "--tsn": shadowFor(t.nameColor || base), "--tst": shadowFor(t.titleColor || base), "--tsb": shadowFor(t.bioColor || base), "--mbg": sf.bg, "--mfg": sf.fg, "--gl": t.avatarGlow ? t.glowAmt / 100 : 0,
     "--bg": t.bg, "--bg2": t.bg2, "--accent": t.accent, "--accent2": t.accent2, "--text": t.text, "--tint": t.glassTint,
-    "--c-name": t.nameColor || t.text, "--c-title": t.titleColor || t.text, "--c-bio": t.bioColor || t.text,
-    "--c-card": t.cardColor || t.text, "--c-foot": t.footerColor || t.text,
+    "--c-name": t.nameColor || base, "--c-title": t.titleColor || base, "--c-bio": t.bioColor || base,
+    "--c-card": t.cardColor || sf.fg, "--c-foot": t.footerColor || base,
     "--nl": light ? "#ffffff" : mixHex(t.bg, "#ffffff", 0.09), "--nd": light ? mixHex(t.bg, "#000000", 0.18) : mixHex(t.bg, "#000000", 0.55),
     "--blur": `${t.glassBlur}px`, "--op": `${t.glassOpacity}%`, "--bd": `${t.glassBorder}%`, "--radius": `${t.radius}px`,
     "--av": `${t.avatarSize}px`, "--avr": AVR[t.avatarShape], "--aj": J[t.avatarPos], "--al": t.align, "--tj": J[t.align], "--jc": JC[t.align],
-    "--ns": `${t.nameSize}px`, "--ts": `${t.titleSize}px`, "--bs": `${t.bioSize}px`, "--up": t.upper ? "uppercase" : "none", "--uls": t.upper ? ".06em" : "0", "--soc": `${t.socialSize}px`,
+    "--ns": `${t.nameSize}px`, "--ts": `${t.titleSize}px`, "--bs": `${t.bioSize}px`, "--up": t.upper ? "uppercase" : "none", "--soc": `${t.socialSize}px`,
     "--dim": t.bgType === "image" ? t.bgDim / 100 : 0, "--speed": t.speed, "--stg": `${t.stagger}ms`,
     "--bnh": `${t.bannerH}px`, "--bfit": t.bannerFit === "stretch" ? "fill" : "cover", "--gap": `${d.gap}px`, "--hg": `${d.hg}px`, "--pt": `${d.pt}px`, "--ha": `${d.ha}px`, "--cp": `${d.cp}px`,
-    "--blc": t.bellColor || (t.bellStyle === "accent" ? (lum(t.accent) > 0.62 ? "#0b0d12" : "#ffffff") : t.text), "--acf": lum(t.accent) > 0.55 ? "#0b0d12" : "#ffffff", "--bls": `${t.bellSize}px`, "--bdg": t.badgeColor, "--bdf": lum(t.badgeColor) > 0.62 ? "#0b0d12" : "#ffffff",
   } as React.CSSProperties;
 }
 
@@ -115,32 +128,18 @@ export function Mini({ t, children, motion, className = "" }: { t: Settings; chi
   );
 }
 
-export const bgOnImage = (t: Settings) => t.bgType === "image" && !!t.bgImage;
-
-// The page background (color, gradient, mesh or photo). Shared by the page and the notifications page.
-export function Bg({ t }: { t: Settings }) {
+// Shared by the public page and the admin live preview.
+export default function Page({ rows, t, embedded, notes = [] }: { rows: Row[]; t: Settings; embedded?: boolean; notes?: Note[] }) {
+  const cards = rows.filter((r) => r.visible);
+  const eff = effSizes(cards);
+  const icons = rows.filter((r) => r.type === "link" && r.asIcon && r.url);
   const bgFilter = `blur(${t.bgBlur}px) brightness(${t.bgBright}%) contrast(${t.bgContrast}%) saturate(${t.bgSat}%) hue-rotate(${t.bgHue}deg)`;
-  const onImg = bgOnImage(t);
+  const onImg = t.bgType === "image" && !!t.bgImage;
   const type = t.style === "neu" && t.bgType !== "image" ? "solid" : t.bgType;
   const bgImg =
     type === "gradient" ? `linear-gradient(160deg,${t.bg},${t.bg2})`
     : type === "mesh" ? `radial-gradient(55% 45% at 12% 8%,${t.accent}66,transparent 70%),radial-gradient(50% 50% at 90% 15%,${t.accent2}55,transparent 70%),radial-gradient(60% 55% at 20% 95%,${t.bg2},transparent 70%),radial-gradient(45% 40% at 85% 90%,${t.accent}33,transparent 70%)`
     : undefined;
-  return (
-    <div className="bgfx" data-m={t.bgMotion} style={{ backgroundColor: t.bg, backgroundImage: bgImg }}>
-      {t.bgType === "image" && t.bgImage && <img className="bgi" src={t.bgImage} alt="" style={{ filter: bgFilter }} />}
-      {onImg && t.bgVignette > 0 && <div className="vg" style={{ opacity: t.bgVignette / 100 }} />}
-    </div>
-  );
-}
-
-// Shared by the public page and the admin live preview.
-// notifs: what the bell shows. On the public page it is the server's first look and the bell then refreshes itself; in the dashboard it is the preview.
-export default function Page({ rows, t, embedded, notifs }: { rows: Row[]; t: Settings; embedded?: boolean; notifs?: Notif[] }) {
-  const cards = rows.filter((r) => r.visible);
-  const eff = effSizes(cards);
-  const icons = rows.filter((r) => r.type === "link" && r.asIcon && r.url);
-  const onImg = bgOnImage(t);
 
   const nav = (bottom = false) =>
     icons.length ? <nav className={`socials${bottom ? " bot" : ""}`}>{icons.map((s) => <Chip key={s.key} s={s} t={t} />)}</nav> : null;
@@ -155,10 +154,7 @@ export default function Page({ rows, t, embedded, notifs }: { rows: Row[]; t: Se
   // Photo on a side: photo and text sit next to each other and the text follows the photo's side.
   const rowMode = showAv && (t.avatarPos !== "center" || L === "side");
   const nameOn = t.showName && !!t.name;
-  // Social-profile text: "@handle" on the first extra line sits right under the name, like X or Instagram; the rest stays as quiet details.
-  const lines = t.showBio ? t.bio.split("\n") : [];
-  const handle = /^@[\w.]{1,40}$/.test((lines[0] ?? "").trim()) ? lines[0].trim() : "";
-  const extra = (handle ? lines.slice(1) : lines).join("\n").trim();
+  const extraOn = t.showBio && !!t.bio;
   const badge = t.verified ? <Verified color={t.verifiedColor} /> : null;
   const topNav = t.socialPos === "top" || t.socialPos === "both" ? nav() : null;
   const botNav = t.socialPos === "bottom" || t.socialPos === "both" ? nav(true) : null;
@@ -167,19 +163,25 @@ export default function Page({ rows, t, embedded, notifs }: { rows: Row[]; t: Se
   return (
     <div className={`pg${embedded ? " emb" : ""}${t.avatarGlow ? " glow" : ""}${pw && t.poweredPos !== "end" ? ` pwc pwc-${t.poweredSide}` : ""}`} data-style={t.style} data-bgi={onImg ? "on" : "off"}
       data-font={t.font} data-en={t.entrance ? t.entranceStyle : "none"} data-hv={t.hover ? t.hoverStyle : "none"} data-am={t.avatarMotion} data-apos={t.avatarPos} style={cssVars(t)}>
-      <Bg t={t} />
+      <div className="bgfx" data-m={t.bgMotion} style={{ backgroundColor: t.bg, backgroundImage: bgImg }}>
+        {t.bgType === "image" && t.bgImage && <img className="bgi" src={t.bgImage} alt="" style={{ filter: bgFilter }} />}
+        {onImg && t.bgVignette > 0 && <div className="vg" style={{ opacity: t.bgVignette / 100 }} />}
+      </div>
       <main className={`wrap${showHd ? "" : " pt"}`}>
         {showHd ? (
-          <header className={`hd hd-${L}${L === "hero" ? "" : " pf"}${showAv ? "" : " noav"}${rowMode ? " row" : ""}${rowMode && showBn ? " ovl" : ""}`}>
+          <header className={`hd hd-${L}${showAv ? "" : " noav"}${rowMode ? " row" : ""}${rowMode && showBn ? " ovl" : ""}`}>
             {showBn && <div className={`bn${t.bannerFade ? "" : " nf"}`}>{bn && <ZoomImg src={bn} />}</div>}
             <div className="sr">
               {showAv && (t.avatar ? <ZoomImg className="av" src={t.avatar} /> : <div className="av" />)}
               {hasText && (
                 <div className="tx">
-                  {nameOn && <h2 className="nm"><span>{t.name}</span>{badge}</h2>}
-                  {handle && <p className="hdl">{handle}</p>}
-                  {t.showTitle && t.title && (nameOn || !badge ? <h1>{t.title}</h1> : <h1 className="vb"><span>{t.title}</span>{badge}</h1>)}
-                  {extra && <p className="bio">{extra}</p>}
+                  {(nameOn || extraOn) && (
+                    <div className="idb">
+                      {nameOn && <h2 className="nm"><span>{t.name}</span>{badge}</h2>}
+                      {extraOn && <p className="bio">{t.bio}</p>}
+                    </div>
+                  )}
+                  {t.showTitle && t.title && (nameOn || !badge ? <h1 className="bt">{t.title}</h1> : <h1 className="bt vb"><span>{t.title}</span>{badge}</h1>)}
                 </div>
               )}
             </div>
@@ -205,7 +207,7 @@ export default function Page({ rows, t, embedded, notifs }: { rows: Row[]; t: Se
         {pw && t.poweredPos === "end" && <Powered t={t} />}
       </main>
       {pw && t.poweredPos !== "end" && <Powered t={t} />}
-      <Bell t={t} initial={notifs ?? []} embedded={embedded} />
+      <Bell notes={notes} t={t} embedded={embedded} />
     </div>
   );
 }

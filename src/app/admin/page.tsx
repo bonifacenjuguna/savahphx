@@ -1,10 +1,10 @@
-import { asc } from "drizzle-orm";
+import { asc, desc } from "drizzle-orm";
 import { db } from "@/db";
 import { ensureSchema } from "@/db/ensure";
-import { links, settings } from "@/db/schema";
+import { links, notes, settings } from "@/db/schema";
 import { isAdmin } from "@/lib/auth";
-import { loadAll } from "@/lib/notif-db";
 import { fromDb } from "@/lib/rows";
+import { fromDbNote } from "@/lib/notes";
 import { normalize, type Layout, type Row } from "@/lib/theme";
 import { login } from "./actions";
 import Editor from "./editor";
@@ -28,10 +28,10 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
       </main>
     );
   }
-  let rows, s, notifs;
+  let rows, s, ns;
   try {
     await ensureSchema();
-    [rows, s, notifs] = await Promise.all([db.select().from(links).orderBy(asc(links.position)), db.select().from(settings), loadAll()]);
+    [rows, s, ns] = await Promise.all([db.select().from(links).orderBy(asc(links.position)), db.select().from(settings), db.select().from(notes).orderBy(desc(notes.createdAt))]);
   } catch (e) {
     console.error("[admin] load failed:", e);
     return (
@@ -46,7 +46,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
   const layouts = ((s.find((x) => x.id === 2)?.data as { layouts?: Layout[] } | undefined)?.layouts ?? []) as Layout[];
   return (
     <main className="adm">
-      <Editor initial={initial} initialSettings={normalize(s.find((x) => x.id === 1)?.data)} initialLayouts={layouts} initialNotifs={notifs} />
+      <Editor initial={initial} initialSettings={normalize(s.find((x) => x.id === 1)?.data)} initialLayouts={layouts} initialNotes={ns.map(fromDbNote)} />
     </main>
   );
 }

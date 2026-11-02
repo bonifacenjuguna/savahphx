@@ -4,25 +4,24 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { BellDemo } from "@/components/Bell";
 import Page, { CardIcon, Chip, Ico, Mini, Powered } from "@/components/Page";
-import { liveAt, type Notif } from "@/lib/notifs";
 import { NETS, NET_GROUPS, netById, shortAddr, walletWarn } from "@/lib/crypto";
 import { GROUPS, PLATFORMS, byId, resolveUrl, toHandle, type Platform } from "@/lib/platforms";
 import { themeFromImage } from "@/lib/palette";
+import type { Note } from "@/lib/notes";
+import { NotifCard, NotifSheet } from "./notifs";
 import { cleanRow } from "@/lib/rows";
 import {
-  AVATAR_MOTIONS, BELL_MOTIONS, BELL_POS, BELL_SHOW, BELL_STYLES, BG_MOTIONS, BG_TYPES, CONTENT_KEYS, DEMO_LAYOUTS, DENSITIES, ENTRANCES, FONTS, HOVERS, LAYOUTS, PRESETS, RESET_GROUPS, STYLES,
+  AVATAR_MOTIONS, BG_MOTIONS, BG_TYPES, CONTENT_KEYS, DEMO_LAYOUTS, DENSITIES, ENTRANCES, FONTS, HOVERS, LAYOUTS, PRESETS, RESET_GROUPS, STYLES,
   defaultSettings, emptyRow, normalize, type Layout, type Row, type Settings,
 } from "@/lib/theme";
 import { settingGroup, settingLabel } from "@/lib/theme";
 import { logout, saveAll, saveLayouts } from "./actions";
-import { NotifSheet, NotifSummary } from "./notifs";
 import { StatsSheet, StatsSummary } from "./stats";
 import { Color, Field, Gl, ImgField, OptColor, Range, Seg, Sheet, Switch, Tgl, httpsErr } from "./ui";
 
 type Err = { title?: string; link?: string; image?: string; dup?: string };
-type Panel = null | "profile" | "header" | "style" | "bg" | "icons" | "motion" | "footer" | "settings" | "stats" | "notifs" | "bell";
+type Panel = null | "profile" | "header" | "style" | "bg" | "icons" | "motion" | "footer" | "settings" | "stats";
 type Sub = null | "reset" | "layouts" | "backup" | "admin" | "history";
 type U =
   | { k: "s"; key: keyof Settings; from: unknown }
@@ -33,6 +32,8 @@ type U =
   | { k: "order"; keys: string[] };
 type Hist = { id: string; at: number; items: { id: string; group: string; label: string; from?: string; to?: string; u: U }[] };
 type Theme = "dark" | "light" | "auto";
+
+const lumHex = (h: string) => { const n = parseInt(h.slice(1), 16); return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; };
 
 const PHOTO_LOOKS: { n: string; v: Partial<Settings> }[] = [
   { n: "Natural", v: { bgDim: 35, bgBlur: 0, bgBright: 100, bgContrast: 100, bgSat: 100, bgHue: 0, bgVignette: 0 } },
@@ -274,10 +275,10 @@ function List({ rows, errs, tried, setRows, open }: { rows: Row[]; errs: Record<
 const ACCENTS = ["#8ab4ff", "#a78bfa", "#34d399", "#fb923c", "#f472b6", "#facc15"];
 const FONT_NAMES = { sora: "Sora", inter: "Inter", space: "Space", dm: "DM Sans", playfair: "Serif" } as const;
 
-export default function Editor({ initial, initialSettings, initialLayouts, initialNotifs }: { initial: Row[]; initialSettings: Settings; initialLayouts: Layout[]; initialNotifs: Notif[] }) {
+export default function Editor({ initial, initialSettings, initialLayouts, initialNotes }: { initial: Row[]; initialSettings: Settings; initialLayouts: Layout[]; initialNotes: Note[] }) {
+  const [notes, setNotes] = useState(initialNotes);
+  const [nSheet, setNSheet] = useState<null | { compose: boolean }>(null);
   const [rows, setRows] = useState(initial);
-  const [notifs, setNotifs] = useState(initialNotifs);
-  const liveNotifs = notifs.filter((n) => liveAt(n));
   const [s, setS] = useState(initialSettings);
   const snap = JSON.stringify({ rows, s });
   const [base, setBase] = useState(snap);
@@ -473,14 +474,13 @@ export default function Editor({ initial, initialSettings, initialLayouts, initi
   const active = (v: Partial<Settings>) => Object.entries(v).every(([k, x]) => s[k as keyof Settings] === x);
   const cur = rows.find((r) => r.key === linkKey);
   const iconCount = rows.filter((r) => r.type === "link" && r.asIcon).length;
-  const tiles: { id: Exclude<Panel, null | "stats" | "notifs">; name: string; val: string }[] = [
+  const tiles: { id: Exclude<Panel, null | "stats">; name: string; val: string }[] = [
     { id: "profile", name: "Profile", val: s.name || s.title },
     { id: "header", name: "Header", val: s.showHeader ? `${s.header} layout` : "Hidden" },
     { id: "style", name: "Style", val: STYLES.find((x) => x.id === s.style)?.name ?? "" },
     { id: "bg", name: "Background", val: s.bgType },
     { id: "icons", name: "Icon row", val: s.socialPos === "off" ? "Off" : `${iconCount} icon${iconCount === 1 ? "" : "s"} · ${s.socialPos}` },
     { id: "motion", name: "Motion", val: `${s.entrance ? s.entranceStyle : "no entrance"} · ${s.hover ? s.hoverStyle : "no hover"}` },
-    { id: "bell", name: "Bell", val: s.bellShow === "off" ? "Off" : `${s.bellStyle} · ${s.bellPos.replace("-", " ")}` },
     { id: "footer", name: "Footer tag", val: s.poweredShow ? `${s.poweredText} ${s.poweredName}` : "Hidden" },
     { id: "settings", name: "Settings", val: `${layouts.length} saved layout${layouts.length === 1 ? "" : "s"}` },
   ];
@@ -535,13 +535,13 @@ export default function Editor({ initial, initialSettings, initialLayouts, initi
       <div className="shell">
         <div className="main">
           <StatsSummary onOpen={() => setPanel("stats")} />
-          <NotifSummary items={notifs} onOpen={() => setPanel("notifs")} />
           <section className="panel">
             <div className="ph"><h2>Links</h2><button type="button" className="btn pri" onClick={() => setAddOpen(true)}>Add</button></div>
             <p className="mut">Tap a card to edit it. Drag the handle to reorder.</p>
             <List rows={rows} errs={errs} tried={tried} setRows={setRows} open={setLinkKey} />
             {!rows.length && <p className="mut empty">Nothing here yet. Tap Add to start.</p>}
           </section>
+          <NotifCard notes={notes} s={s} onOpen={(compose) => setNSheet({ compose })} />
           <section className="panel">
             <h2>Design</h2>
             <div className="tiles">
@@ -555,7 +555,7 @@ export default function Editor({ initial, initialSettings, initialLayouts, initi
         </div>
         <aside className={"pv" + (pv ? " show" : "")}>
           <button type="button" className="btn closepv" onClick={() => setPv(false)}>Close preview</button>
-          <div className="phone"><Page rows={rows} t={s} embedded notifs={liveNotifs} /></div>
+          <div className="phone"><Page rows={rows} t={s} embedded notes={notes} /></div>
         </aside>
       </div>
 
@@ -593,25 +593,7 @@ export default function Editor({ initial, initialSettings, initialLayouts, initi
       )}
 
       {panel === "stats" && <StatsSheet onClose={close} say={say} />}
-      {panel === "notifs" && <NotifSheet items={notifs} setItems={setNotifs} t={s} onClose={close} say={say} openBell={() => setPanel("bell")} />}
-
-      {panel === "bell" && (
-        <Sheet title="Notification bell" onClose={close}>
-          <Mini t={s}><BellDemo t={s} /></Mini>
-          <p className="mut">The bell rings for about a second, rests, then rings again, only while a visitor has something unread. These settings are part of your design, so press Save changes to publish them. Posting notifications is under the Notifications card.</p>
-          <Field label="Show the bell" hint="Automatic shows it once you have a live notification."><Seg value={s.bellShow} onChange={(v) => set("bellShow", v)} options={[{ v: "auto", l: "Automatic" }, { v: "always", l: "Always" }, { v: "off", l: "Off" }]} /></Field>
-          <Field label="Title" hint="Shown on the notifications page and as the bell's label."><input className="in" value={s.bellLabel} maxLength={30} onChange={(e) => set("bellLabel", e.target.value)} /></Field>
-          <Field label="Position"><Seg value={s.bellPos} onChange={(v) => set("bellPos", v)} options={BELL_POS.map((v) => ({ v, l: v.replace("-", " ") }))} /></Field>
-          <Field label="Style" hint="Match cards uses your card look. Accent fills it with your accent colors."><Seg value={s.bellStyle} onChange={(v) => set("bellStyle", v)} options={BELL_STYLES.map((v) => ({ v, l: v === "surface" ? "Match cards" : v }))} /></Field>
-          <Range label="Size" value={s.bellSize} min={34} max={68} unit="px" onChange={(v) => set("bellSize", v)} />
-          <OptColor label="Bell icon color" value={s.bellColor} auto={s.text} onChange={(v) => set("bellColor", v)} />
-          <Field label="Badge"><Seg value={s.bellBadge} onChange={(v) => set("bellBadge", v)} options={[{ v: "number", l: "Number" }, { v: "dot", l: "Dot" }]} /></Field>
-          <Color label="Badge color" value={s.badgeColor} onChange={(v) => set("badgeColor", v)} />
-          <Field label="Ring motion"><Seg value={s.bellMotion} onChange={(v) => set("bellMotion", v)} options={BELL_MOTIONS.map((v) => ({ v, l: v === "none" ? "Still" : v }))} /></Field>
-          {s.bellMotion !== "none" && <Range label="Quiet time between rings" value={s.bellEvery} min={2} max={30} unit="s" onChange={(v) => set("bellEvery", v)} />}
-          <p className="mut">Visitors who turned on reduced motion on their device never see the ringing.</p>
-        </Sheet>
-      )}
+      {nSheet && <NotifSheet notes={notes} setNotes={setNotes} s={s} set={set} rows={rows} say={say} startCompose={nSheet.compose} onClose={() => setNSheet(null)} />}
 
       {panel === "profile" && (
         <Sheet title="Profile" onClose={close}>
@@ -658,7 +640,7 @@ export default function Editor({ initial, initialSettings, initialLayouts, initi
           <Range label="Banner height" value={s.bannerH} min={100} max={380} unit="px" onChange={(v) => set("bannerH", v)} />
           <Switch on={s.bannerFade} onChange={(v) => set("bannerFade", v)} label="Fade banner into the page" />
           <Field label="Spacing" hint="How close everything sits together"><Seg value={s.density} onChange={(v) => set("density", v)} options={DENSITIES} /></Field>
-          <Field label="Photo position" hint="Left or right gives a social-profile look: photo on that side, name, @handle and bio underneath."><Seg value={s.avatarPos} onChange={(v) => set("avatarPos", v)} options={["left", "center", "right"] as const} /></Field>
+          <Field label="Photo position" hint="Left or right puts your name and bio right beside the photo."><Seg value={s.avatarPos} onChange={(v) => set("avatarPos", v)} options={["left", "center", "right"] as const} /></Field>
           <Field label="Text alignment" hint={s.avatarPos === "center" ? "Used when the photo is centered." : "Not needed now: the text follows the photo's side."}><Seg value={s.align} onChange={(v) => set("align", v)} options={["left", "center", "right"] as const} /></Field>
           <Field label="Photo shape"><Seg value={s.avatarShape} onChange={(v) => set("avatarShape", v)} options={["circle", "rounded", "square"] as const} /></Field>
           <Range label="Photo size" value={s.avatarSize} min={64} max={200} unit="px" onChange={(v) => set("avatarSize", v)} />
@@ -695,7 +677,8 @@ export default function Editor({ initial, initialSettings, initialLayouts, initi
           <h3 className="gh">Text colors by part</h3>
           <OptColor label="Card text" value={s.cardColor} auto={s.text} onChange={(v) => set("cardColor", v)} />
           <OptColor label="Icon row logos" value={s.iconColor} auto={s.text} onChange={(v) => set("iconColor", v)} />
-          <p className="mut">Name, bio and extra lines are in Profile. Footer text is in Footer tag. Auto follows the Text color above.</p>
+          <p className="mut">Auto means "follow the Text color above" for the name, bio, extra lines, footer, icons and cards. Each part can still get its own color in Profile, Icon row and Footer tag. When a layout is applied, every part goes back to Auto.</p>
+          {Math.abs(lumHex(s.text) - lumHex(s.bg)) < 0.42 && !(s.bgType === "image" && s.bgImage) && <p className="mut warn">Your Text color is too close to the background color, so it is hard to read. Auto text is being corrected for you so nothing disappears, but pick a clearly lighter or darker Text color to fix it properly.</p>}
           <Range label="Corner radius" value={s.radius} min={0} max={40} unit="px" onChange={(v) => set("radius", v)} />
           {s.style === "glass" && <>
             <Range label="Glass blur" value={s.glassBlur} min={0} max={40} unit="px" onChange={(v) => set("glassBlur", v)} />

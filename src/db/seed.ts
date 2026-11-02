@@ -9,7 +9,7 @@ async function main() {
   const { db } = await import("./index");
   const { ensureSchema } = await import("./ensure");
   const { eq } = await import("drizzle-orm");
-  const { links, settings, notifications } = await import("./schema");
+  const { links, settings } = await import("./schema");
   const { defaultSettings } = await import("../lib/theme");
   await ensureSchema();
   const saved = await db.select({ id: settings.id }).from(settings).where(eq(settings.id, 1)).limit(1);
@@ -24,13 +24,6 @@ async function main() {
       { kind: "card", type: "text", title: "Business inquiries", body: "hello@example.com", url: "", position: 4, uid: "demo-note" },
     ]);
   }
-  await db.insert(notifications).values({
-    uid: "demo-welcome", title: "Welcome!", summary: "Tap to see how notifications look.", kind: "news", pinned: false, status: "published", publishAt: new Date(),
-    blocks: [
-      { id: "w1", t: "p", text: "This is a sample **notification**. Post news, offers and updates from your dashboard, with pictures, buttons and more." },
-      { id: "w2", t: "callout", tone: "info", text: "Delete or edit this one under Notifications in the dashboard." },
-    ],
-  }).onConflictDoNothing();
   await db.insert(settings).values({ id: 1, data: defaultSettings }).onConflictDoNothing();
   console.log("Fresh site seeded with John Doe examples.");
 }

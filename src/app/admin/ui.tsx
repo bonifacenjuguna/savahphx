@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 export const httpsErr = (v: string) => (v && !/^https:\/\//i.test(v) ? "Must start with https://" : undefined);
 
 const GL: Record<string, string> = {
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
   profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
   header: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/>',
   style: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/>',
@@ -22,30 +23,6 @@ const GL: Record<string, string> = {
   grip: '<circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/>',
   chev: '<path d="m9 6 6 6-6 6"/>',
   refresh: '<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>',
-  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
-  plus: '<path d="M12 5v14M5 12h14"/>',
-  up: '<path d="m6 15 6-6 6 6"/>',
-  down: '<path d="m6 9 6 6 6-6"/>',
-  copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>',
-  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>',
-  pin: '<path d="M9 4h6l-1 6 3 3v2H7v-2l3-3zM12 15v6"/>',
-  image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
-  gallery: '<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/>',
-  quote: '<path d="M7 17c-2 0-3-1.2-3-3 0-3 2-5 4-6M17 17c-2 0-3-1.2-3-3 0-3 2-5 4-6"/>',
-  list: '<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',
-  olist: '<path d="M10 6h10M10 12h10M10 18h10M4 5l1.5-1v4M4 14h3l-3 3h3"/>',
-  heading: '<path d="M5 5v14M19 5v14M5 12h14"/>',
-  button: '<rect x="3" y="8" width="18" height="8" rx="4"/><path d="M9 12h6"/>',
-  code: '<path d="m8 8-4 4 4 4M16 8l4 4-4 4"/>',
-  kv: '<path d="M4 7h5M12 7h8M4 12h5M12 12h8M4 17h5M12 17h8"/>',
-  hr: '<path d="M3 12h18"/>',
-  callout: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M12 9v4M12 16v.1"/>',
-  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
-  eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
-  bold: '<path d="M7 5h6a3.5 3.5 0 0 1 0 7H7zM7 12h7a3.5 3.5 0 0 1 0 7H7z"/>',
-  italic: '<path d="M10 5h8M6 19h8M14 5l-4 14"/>',
-  strike: '<path d="M5 12h14M16 7a4 4 0 0 0-4-2c-2.5 0-4 1.2-4 3M8 16a4 4 0 0 0 4 3c2.3 0 4-1.2 4-3"/>',
-  send: '<path d="M21 3 3 10l7 3 3 7z"/>',
 };
 export const Gl = ({ n, s = 20 }: { n: string; s?: number }) => (
   <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: GL[n] }} />
