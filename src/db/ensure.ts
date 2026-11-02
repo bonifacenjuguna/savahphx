@@ -29,13 +29,13 @@ export function ensureSchema() {
       country text, city text, device text, os text, browser text, ref text, lang text)`;
     await sql`CREATE INDEX IF NOT EXISTS events_at_idx ON events (at)`;
     await sql`CREATE INDEX IF NOT EXISTS events_k_idx ON events (k)`;
-    await sql`CREATE TABLE IF NOT EXISTS notifications (
+    await sql`CREATE TABLE IF NOT EXISTS bell_posts (
       id serial PRIMARY KEY, uid text NOT NULL UNIQUE, title text NOT NULL, summary text NOT NULL DEFAULT '',
       kind text NOT NULL DEFAULT 'info', color text, image text, blocks jsonb NOT NULL DEFAULT '[]'::jsonb,
       cta text, cta_url text, pinned boolean NOT NULL DEFAULT false, quiet boolean NOT NULL DEFAULT false,
       status text NOT NULL DEFAULT 'published', publish_at timestamptz, expires_at timestamptz,
       created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(), rev integer NOT NULL DEFAULT 1)`;
-    await sql`CREATE INDEX IF NOT EXISTS notifications_status_idx ON notifications (status, publish_at)`;
+    await sql`CREATE INDEX IF NOT EXISTS bell_posts_status_idx ON bell_posts (status, publish_at)`;
   })().catch((e) => {
     done = undefined; // retry on next request
     throw e;

@@ -42,7 +42,7 @@ export const events = pgTable("events", {
 });
 
 // Notifications you post from the dashboard. Visitors see the live ones behind the bell.
-export const notifications = pgTable("notifications", {
+export const notifications = pgTable("bell_posts", {
   id: serial("id").primaryKey(),
   uid: text("uid").notNull().unique(),
   title: text("title").notNull(),
